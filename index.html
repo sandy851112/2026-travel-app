@@ -1,0 +1,1768 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>旅遊行程與記帳 · 德國奧地利之旅</title>
+
+  <!-- ===== PWA：全螢幕 App 體驗（標準列/狀態列設定） ===== -->
+  <meta name="theme-color" content="#8C9C84" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="德奧之旅" />
+  <meta name="application-name" content="德奧之旅" />
+
+  <!-- ===== PWA：以 Data URI 動態注入 Manifest 與 App 圖示（免額外檔案） ===== -->
+  <script>
+    (function () {
+      // 大地色系 App 圖示（SVG，內嵌為 Data URI）
+      var iconSvg =
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' width='512' height='512'>" +
+        "<rect width='512' height='512' rx='112' fill='#8C9C84'/>" +
+        "<g transform='translate(128 128) scale(10.6667)' fill='none' stroke='#FAF8F3' " +
+        "stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>" +
+        "<path d='M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2" +
+        "c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3" +
+        "c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z'/></g></svg>";
+      var iconUri = 'data:image/svg+xml,' + encodeURIComponent(iconSvg);
+
+      var manifest = {
+        name: '德國奧地利之旅 · 行程與記帳',
+        short_name: '德奧之旅',
+        description: '14 天德國奧地利旅遊行程規劃與雙人分帳記帳',
+        lang: 'zh-Hant',
+        start_url: './index.html',
+        scope: './',
+        display: 'standalone',
+        orientation: 'portrait',
+        background_color: '#F3EFE7',
+        theme_color: '#8C9C84',
+        icons: [
+          { src: iconUri, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+          { src: iconUri, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' },
+          { src: iconUri, sizes: 'any',     type: 'image/svg+xml', purpose: 'any' }
+        ]
+      };
+
+      var mlink = document.createElement('link');
+      mlink.rel = 'manifest';
+      mlink.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
+      document.head.appendChild(mlink);
+
+      var alink = document.createElement('link');
+      alink.rel = 'apple-touch-icon';
+      alink.href = iconUri;
+      document.head.appendChild(alink);
+    })();
+  </script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React 18 -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Babel (JSX in-browser) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- lucide icons (UMD) -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            sand:  { 50:'#FAF8F3', 100:'#F5F1E9', 200:'#ECE6DA', 300:'#E0D8C8' },
+            sage:  { 400:'#A7B4A0', 500:'#8C9C84', 600:'#74846C', 700:'#5E6C58' },
+            oat:   { 400:'#C9AF92', 500:'#B8997A', 600:'#9E8064' },
+            clay:  { 400:'#C89B8C', 500:'#B4826F' },
+            ink:   { 500:'#8A837A', 600:'#6B655D', 700:'#4A453E', 800:'#332F2A' },
+          },
+          fontFamily: {
+            sans: ['"Noto Sans TC"','-apple-system','"Segoe UI"','system-ui','sans-serif'],
+          },
+          boxShadow: {
+            soft: '0 1px 2px rgba(74,69,62,0.04), 0 8px 24px -12px rgba(74,69,62,0.10)',
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    html,body,#root { height:100%; }
+    body { background:#F3EFE7; -webkit-font-smoothing:antialiased; }
+    ::-webkit-scrollbar{ width:10px;height:10px }
+    ::-webkit-scrollbar-thumb{ background:#DCD3C4;border-radius:8px;border:3px solid #F3EFE7 }
+    .scroll-x{ scrollbar-width:thin; scrollbar-color:#DCD3C4 transparent }
+    .scroll-x::-webkit-scrollbar{ height:6px }
+    .scroll-x::-webkit-scrollbar-thumb{ background:#DCD3C4;border:none;border-radius:8px }
+    .fade-in{ animation:fade .35s ease both }
+    @keyframes fade{ from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+    .pop-in{ animation:pop .2s ease both }
+    @keyframes pop{ from{opacity:0;transform:scale(.97)} to{opacity:1;transform:none} }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel-src" id="app-src">
+    const { useState, useMemo, useEffect } = React;
+
+    /* ---------- localStorage 持久化 ---------- */
+    const LS_KEYS = { days: 'travel.days.v3', expenses: 'travel.expenses.v3' };
+
+    function loadLS(key) {
+      try {
+        const raw = window.localStorage.getItem(key);
+        return raw == null ? undefined : JSON.parse(raw);
+      } catch (e) { return undefined; }
+    }
+    function saveLS(key, val) {
+      try { window.localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+    }
+    function usePersistentState(key, initializer) {
+      const [state, setState] = useState(() => {
+        const stored = loadLS(key);
+        if (stored !== undefined) return stored;
+        return typeof initializer === 'function' ? initializer() : initializer;
+      });
+      useEffect(() => { saveLS(key, state); }, [key, state]);
+      return [state, setState];
+    }
+    function resetAllData() {
+      try {
+        window.localStorage.removeItem(LS_KEYS.days);
+        window.localStorage.removeItem(LS_KEYS.expenses);
+      } catch (e) {}
+      window.location.reload();
+    }
+
+    /* ---------- lucide 圖示 React 包裝 ---------- */
+    function Icon({ name, size = 20, className = '', strokeWidth = 1.75, style }) {
+      const node = window.lucide && window.lucide.icons && window.lucide.icons[name];
+      if (!node) return null;
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size}
+          viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"
+          className={className} style={style}>
+          {node.map((child, i) => React.createElement(child[0], { key: i, ...child[1] }))}
+        </svg>
+      );
+    }
+
+    /* ---------- 唯一 id 產生器 ---------- */
+    let _uid = 1000;
+    const uid = () => (++_uid);
+
+    /* ---------- 交通方式 ---------- */
+    // 可選項（依需求：移除「纜車」「電車」；新增「計程車」「自行車」；「巴士」改名「公車」）
+    const TRANSPORT_KEYS = ['步行', '公車', '地鐵', '火車', '計程車', '自行車', '船', '飛機'];
+    // 依交通方式字串推斷對應 Icon（同時支援組合字與既有資料的舊名稱）
+    function transportIcon(mode) {
+      const m = mode || '';
+      if (m.includes('飛機')) return 'Plane';
+      if (m.includes('計程車')) return 'Car';
+      if (m.includes('自行車') || m.includes('單車') || m.includes('腳踏車')) return 'Bike';
+      if (m.includes('纜車')) return 'CableCar';
+      if (m.includes('船') || m.includes('遊船')) return 'Ship';
+      if (m.includes('火車')) return 'TrainFront';
+      if (m.includes('地鐵') || m.includes('U-Bahn') || m.includes('U4')) return 'TrainFront';
+      if (m.includes('電車') || m.includes('S-Bahn') || m.includes('快線') || m.includes('CAT')) return 'TramFront';
+      if (m.includes('公車') || m.includes('巴士')) return 'Bus';
+      if (m.includes('步行')) return 'Footprints';
+      return 'Navigation';
+    }
+
+    /* ---------- Google Maps 連結 ---------- */
+    function mapHref(map) {
+      const s = (map || '').trim();
+      if (!s) return '';
+      if (/^https?:\/\//i.test(s)) return s;
+      return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s);
+    }
+
+    /* ---------- Open-Meteo 天氣整合 ---------- */
+    const TRIP_YEAR = 2026;
+    // 各城市經緯度（依每日對應城市推斷）
+    const GEO = [
+      { keys:['慕尼黑','München','Munich'], lat:48.137, lon:11.575, name:'慕尼黑' },
+      { keys:['薩爾斯堡','Salzburg'],       lat:47.809, lon:13.055, name:'薩爾斯堡' },
+      { keys:['哈修塔特','Hallstatt'],      lat:47.562, lon:13.649, name:'哈修塔特' },
+      { keys:['維也納','Wien','Vienna'],     lat:48.208, lon:16.373, name:'維也納' },
+      { keys:['桃園','台北','台灣','桃園'],   lat:25.038, lon:121.565, name:'台北' },
+    ];
+    function resolveGeo(day) {
+      const s = (day.city || '') + '｜' + (day.lodging || '');
+      for (const g of GEO) { if (g.keys.some(k => s.includes(k))) return g; }
+      return null;
+    }
+    function isMMDD(d) { return /^\d{2}\/\d{2}$/.test(d || ''); }
+    function toISODate(mmdd) {
+      const [mm, dd] = mmdd.split('/');
+      return `${TRIP_YEAR}-${mm}-${dd}`;
+    }
+    // WMO Weathercode → { icon, desc }
+    function wmoToWeather(code) {
+      if (code === 0) return { icon:'Sun', desc:'晴朗' };
+      if (code === 1) return { icon:'Sun', desc:'大致晴朗' };
+      if (code === 2) return { icon:'CloudSun', desc:'部分多雲' };
+      if (code === 3) return { icon:'Cloud', desc:'陰天' };
+      if (code === 45 || code === 48) return { icon:'CloudFog', desc:'有霧' };
+      if (code >= 51 && code <= 57) return { icon:'CloudDrizzle', desc:'毛毛雨' };
+      if (code >= 61 && code <= 67) return { icon:'CloudRain', desc:'降雨' };
+      if (code >= 71 && code <= 77) return { icon:'CloudSnow', desc:'降雪' };
+      if (code >= 80 && code <= 82) return { icon:'CloudRain', desc:'陣雨' };
+      if (code === 85 || code === 86) return { icon:'CloudSnow', desc:'陣雪' };
+      if (code >= 95) return { icon:'CloudLightning', desc:'雷雨' };
+      return { icon:'Cloud', desc:'多雲' };
+    }
+
+    /* ---------- 天氣選項（新增天數時使用） ---------- */
+    const WEATHER_OPTIONS = [
+      { icon:'Sun', desc:'晴朗' }, { icon:'CloudSun', desc:'晴時多雲' },
+      { icon:'Cloud', desc:'多雲' }, { icon:'CloudSnow', desc:'飄雪' }, { icon:'Snowflake', desc:'降雪' },
+    ];
+
+    /* ---------- 基本資訊 ---------- */
+    const TRIP = {
+      title: '德國奧地利之旅',
+      subtitle: '慕尼黑 · 薩爾斯堡 · 哈修塔特 · 維也納',
+      dateRange: '2026.12.07 – 2026.12.20 · 共 14 天',
+      currency: '€',
+    };
+
+    const CATEGORIES = {
+      '餐飲': { icon: 'Utensils',    color: '#B4826F', bg:'#F0E4DD' },
+      '交通': { icon: 'TramFront',   color: '#8C9C84', bg:'#E4EADF' },
+      '購物': { icon: 'ShoppingBag', color: '#B8997A', bg:'#F0E7DA' },
+      '住宿': { icon: 'BedDouble',   color: '#7C8AA0', bg:'#E2E6EE' },
+      '景點': { icon: 'Ticket',      color: '#A08AA0', bg:'#EBE3EB' },
+      '其他': { icon: 'MoreHorizontal', color:'#8A837A', bg:'#EAE6DF' },
+    };
+
+    /* ---------- 預設行程資料（14 天 · Day 0–13） ----------
+       item 結構：{ time, title, desc, note?, map?, transports?: [{ mode, duration }, ...] }
+       transports：抵達本景點的交通「節點陣列」，可有多段（步行→火車→公車），
+                   顯示於上一張卡片與本卡片之間的連接處，每段可獨立編輯／刪除。
+       map：Google Maps 連結或地點名稱，卡片會顯示「在地圖中開啟」按鈕。 */
+    const ITINERARY = [
+      {
+        date:'12/07', weekday:'一', city:'桃園 → 慕尼黑（出發）', lodging:'夜間航班（機上）',
+        weather:{ icon:'CloudSun', desc:'台北 溫暖', high:25, low:20 },
+        items:[
+          { time:'20:00', title:'桃園國際機場 · 集合報到', desc:'展開 14 天德奧之旅的起點。建議提前約 3 小時抵達第二航廈，預留辦理登機、託運行李與退稅的時間。', note:'攜帶護照（效期 6 個月以上）、電子機票、歐元現金與信用卡。', map:'桃園國際機場第二航廈' },
+          { time:'23:25', title:'航班起飛 · 飛往慕尼黑', desc:'長程夜間航班，跨越約 9 個時區。可先調整作息，登機後盡量休息以減緩時差。' },
+        ],
+      },
+      {
+        date:'12/08', weekday:'二', city:'慕尼黑 München', lodging:'慕尼黑',
+        weather:{ icon:'CloudSnow', desc:'小雪', high:3, low:-2 },
+        items:[
+          { time:'07:05', title:'抵達慕尼黑機場 Flughafen München', desc:'降落巴伐利亞首府。完成入境查驗與提領行李後，可在機場購買交通票券再進市區。', note:'搭乘 S1 或 S8 機場快線約 45 分鐘可達市中心，建議購買一日交通券。', map:'Munich Airport', transports:[{ mode:'飛機', duration:'12 小時' }] },
+          { time:'10:30', title:'寧芬堡宮 Schloss Nymphenburg', desc:'巴伐利亞王室的夏季行宮，1664 年為慶祝王儲誕生而建，是德國規模最大的巴洛克宮殿之一。主廳的洛可可壁畫與路德維希一世的「美人畫廊」是亮點，冬季雪覆的法式庭園更顯靜謐。', note:'冬季開放約 10:00–16:00，宮殿＋園區博物館可購套票。', map:'Schloss Nymphenburg, München', transports:[{ mode:'火車', duration:'40 分鐘' }] },
+          { time:'14:00', title:'瑪麗恩廣場 Marienplatz', desc:'慕尼黑八百年來的城市心臟，廣場上的新市政廳擁有華麗的新哥德式立面。每日固定時刻，鐘樓的機械木偶會隨 43 座鐘琴演出騎士比武，是不可錯過的經典畫面。', map:'Marienplatz, München', transports:[{ mode:'地鐵', duration:'25 分鐘' }] },
+          { time:'16:30', title:'慕尼黑聖誕市集 Christkindlmarkt', desc:'慕尼黑最具代表性的聖誕市集自 14 世紀延續至今，廣場上點亮高達 30 公尺的聖誕樹。木屋攤位飄著薑餅、烤杏仁與熱紅酒香氣，是體驗德式耶誕氛圍的最佳去處。', note:'熱紅酒 Glühwein 需付押杯費，喝完退杯可取回。', transports:[{ mode:'步行', duration:'5 分鐘' }] },
+        ],
+      },
+      {
+        date:'12/09', weekday:'三', city:'新天鵝堡 Neuschwanstein', lodging:'慕尼黑',
+        weather:{ icon:'Snowflake', desc:'山區降雪', high:1, low:-5 },
+        items:[
+          { time:'08:00', title:'慕尼黑中央車站出發', desc:'前往阿爾卑斯山麓的福森（Füssen）。冬季山區易降雪，建議穿著防水保暖鞋與厚外套。', note:'可購買「巴伐利亞邦票 Bayern-Ticket」，一票可乘區域火車與公車，多人同行更划算。', map:'München Hauptbahnhof' },
+          { time:'10:30', title:'新天鵝堡 Schloss Neuschwanstein', desc:'「童話國王」路德維希二世於 1869 年動工的夢幻城堡，靈感取自華格納歌劇，也是迪士尼睡美人城堡的原型。城堡棲身雪白山巒之間宛如仙境，內部的歌者大廳與人工鐘乳石洞極盡奢華。', note:'門票務必事先於官網預約並指定入場梯次，現場常售罄。', map:'Schloss Neuschwanstein', transports:[{ mode:'火車', duration:'2 小時' },{ mode:'公車', duration:'30 分鐘' }] },
+          { time:'14:00', title:'瑪麗恩橋 Marienbrücke & 高天鵝堡', desc:'橫跨波拉特峽谷的瑪麗恩橋是拍攝新天鵝堡全景的最佳角度；對面山丘的黃色高天鵝堡則是路德維希二世的童年居所。', note:'冬季瑪麗恩橋可能因結冰封閉，出發前建議確認。', map:'Marienbrücke Neuschwanstein', transports:[{ mode:'步行', duration:'20 分鐘' }] },
+        ],
+      },
+      {
+        date:'12/10', weekday:'四', city:'達豪 · 慕尼黑市區', lodging:'慕尼黑',
+        weather:{ icon:'Cloud', desc:'陰天', high:4, low:-1 },
+        items:[
+          { time:'09:30', title:'達豪集中營紀念館 KZ-Gedenkstätte Dachau', desc:'1933 年納粹建立的第一座集中營，如今為紀念與教育場所。園區保留重建的營房、鐵絲網與紀念雕塑，透過大量史料訴說這段沉重歷史，提醒世人記取教訓、珍惜和平。', note:'免費入場，建議租借語音導覽；參觀時請保持肅穆。', map:'KZ-Gedenkstätte Dachau', transports:[{ mode:'火車', duration:'40 分鐘' },{ mode:'公車', duration:'10 分鐘' }] },
+          { time:'14:00', title:'慕尼黑王宮 Residenz', desc:'維特爾斯巴赫王朝的權力中心，是德國最大的市內宮殿。金碧輝煌的古物館、祖先畫廊與珍寶館，展現數百年皇室的氣派與收藏。', map:'Residenz München', transports:[{ mode:'火車', duration:'45 分鐘' }] },
+          { time:'16:30', title:'穀物市場 Viktualienmarkt', desc:'慕尼黑百年露天美食市集，逾百家攤位販售新鮮蔬果、香料、起司與巴伐利亞白香腸。中央的啤酒花園在栗子樹下提供在地啤酒，最能感受慕尼黑日常。', map:'Viktualienmarkt', transports:[{ mode:'步行', duration:'10 分鐘' }] },
+        ],
+      },
+      {
+        date:'12/11', weekday:'五', city:'慕尼黑 → 薩爾斯堡', lodging:'薩爾斯堡',
+        weather:{ icon:'CloudSnow', desc:'零星飄雪', high:3, low:-2 },
+        items:[
+          { time:'09:00', title:'慕尼黑英國花園晨間漫步', desc:'離開慕尼黑前，到歐洲最大的城市公園之一走走。冬日雪景下的溪流與木橋格外優美，還能看到不畏寒冷的河道衝浪客。', map:'Englischer Garten München' },
+          { time:'12:30', title:'薩爾斯堡舊城 Altstadt', desc:'莫札特的故鄉，被薩爾察河一分為二，舊城完整保留中世紀與巴洛克風貌，1996 年列入世界文化遺產。主教座堂、莫札特廣場與蜿蜒巷弄交織出濃厚的音樂與藝術氣息。', note:'跨越德奧邊境，記得確認手機漫遊與交通票券。', map:'Salzburg Altstadt', transports:[{ mode:'步行', duration:'10 分鐘' },{ mode:'火車', duration:'2 小時' },{ mode:'公車', duration:'15 分鐘' }] },
+          { time:'15:00', title:'米拉貝爾花園 Mirabellgarten', desc:'薩爾斯堡大主教為愛妻興建的巴洛克花園，對稱花壇、飛馬噴泉與希臘神話雕像優雅動人，也是電影《真善美》「Do-Re-Mi」的取景地，可遠眺山頂的薩爾斯堡城堡。', map:'Mirabellgarten Salzburg', transports:[{ mode:'步行', duration:'15 分鐘' }] },
+          { time:'17:00', title:'糧食胡同 Getreidegasse', desc:'舊城最熱鬧的購物老街，狹窄巷弄兩側懸掛著精緻的鑄鐵行會招牌，連速食店都得入境隨俗。街上第 9 號黃色建築即是音樂神童莫札特的出生地。', map:'Getreidegasse Salzburg', transports:[{ mode:'步行', duration:'10 分鐘' }] },
+        ],
+      },
+      {
+        date:'12/12', weekday:'六', city:'薩爾斯堡 Salzburg', lodging:'薩爾斯堡',
+        weather:{ icon:'Snowflake', desc:'山區降雪', high:0, low:-6 },
+        items:[
+          { time:'09:30', title:'溫特山纜車 Untersbergbahn', desc:'搭乘纜車登上薩爾斯堡近郊的溫特山，約 8 分鐘攀升至 1,800 公尺山頂。晴朗時可俯瞰薩爾斯堡城與阿爾卑斯群峰的壯闊雪景，是眺望全景的絕佳制高點。', note:'山頂氣溫遠低於市區，務必攜帶防風保暖衣物與手套。', map:'Untersbergbahn', transports:[{ mode:'公車', duration:'30 分鐘' }] },
+          { time:'14:00', title:'海爾布倫宮 Schloss Hellbrunn', desc:'1615 年薩爾斯堡大主教興建的娛樂離宮，以遍布庭園的「惡作劇噴泉」聞名——石桌、雕像與步道暗藏機關，會冷不防向賓客噴水。冬季噴泉停止運作，但巴洛克宮殿與對稱庭園仍值得一訪。', note:'惡作劇噴泉多於冬季關閉，可改為參觀宮殿內部。', map:'Schloss Hellbrunn', transports:[{ mode:'公車', duration:'40 分鐘' }] },
+        ],
+      },
+      {
+        date:'12/13', weekday:'日', city:'國王湖 Königssee', lodging:'薩爾斯堡',
+        weather:{ icon:'CloudSun', desc:'晴時多雲', high:5, low:-1 },
+        items:[
+          { time:'08:30', title:'國王湖 Königssee', desc:'阿爾卑斯山懷抱中的冰河湖，湖水清澈如翡翠，兩岸峭壁高聳。為保護生態，湖上僅行駛靜音電動船，船家會在峽灣間吹奏小號展示悠長回音。', note:'冬季船班較少，出發前務必查詢當日營運時刻。', map:'Königssee', transports:[{ mode:'公車', duration:'1 小時' }] },
+          { time:'11:00', title:'聖巴多羅買教堂 St. Bartholomä', desc:'佇立湖畔半島上的朝聖教堂，紅色洋蔥形圓頂與翠綠湖水、灰白峭壁相映，是國王湖最經典的明信片畫面。', map:'St. Bartholomä Königssee', transports:[{ mode:'船', duration:'35 分鐘' }] },
+          { time:'14:00', title:'貝希特斯加登 Berchtesgaden 小鎮', desc:'德國東南角的阿爾卑斯度假小鎮，木屋、教堂與雪山構成宛如童話的畫面，適合悠閒散步、品嚐山區特色餐點。', map:'Berchtesgaden', transports:[{ mode:'船', duration:'25 分鐘' },{ mode:'步行', duration:'20 分鐘' }] },
+        ],
+      },
+      {
+        date:'12/14', weekday:'一', city:'哈修塔特 Hallstatt', lodging:'哈修塔特',
+        weather:{ icon:'CloudSnow', desc:'飄雪', high:2, low:-4 },
+        items:[
+          { time:'09:00', title:'前往哈修塔特 Hallstatt', desc:'被譽為「世界最美湖畔小鎮」，依山傍水的彩色木屋沿著哈修塔特湖層層堆疊，2,000 多年的鹽業歷史使其列入世界文化遺產。清晨薄霧與教堂尖塔倒映湖面，是攝影迷的夢幻場景。', note:'沿途需轉乘火車與接駁船，行李建議精簡。', map:'Hallstatt', transports:[{ mode:'火車', duration:'2 小時' },{ mode:'船', duration:'10 分鐘' }] },
+          { time:'13:00', title:'哈修塔特鹽礦 Salzwelten', desc:'世界上最古老的鹽礦，開採歷史可追溯至 7,000 年前。搭纜車登上山腰後，可換上礦工服體驗刺激的木製滑梯深入坑道，並看見地底鹽湖與千年採鹽遺跡。', note:'冬季部分設施關閉，出發前請確認鹽礦與纜車營運狀態。', map:'Salzwelten Hallstatt', transports:[{ mode:'纜車', duration:'10 分鐘' }] },
+          { time:'15:30', title:'哈修塔特湖畔 · 經典明信片視角', desc:'走到小鎮北端的觀景點，把彩色木屋、教堂尖塔與湖光山色一次收進鏡頭，這正是無數桌布與明信片的取景地。', map:'Hallstatt Skywalk Viewpoint', transports:[{ mode:'步行', duration:'20 分鐘' }] },
+        ],
+      },
+      {
+        date:'12/15', weekday:'二', city:'哈修塔特 → 維也納', lodging:'維也納',
+        weather:{ icon:'Cloud', desc:'多雲', high:4, low:-2 },
+        items:[
+          { time:'09:00', title:'哈修塔特晨間漫步', desc:'趁人潮湧入前，享受小鎮最寧靜的時刻。沿湖畔散步、在市集廣場喝杯咖啡，感受阿爾卑斯山村的緩慢步調。', map:'Hallstatt Marktplatz' },
+          { time:'11:00', title:'人骨教堂 Beinhaus & 天主教堂', desc:'因土地稀少，當地曾有遷葬習俗，將先人頭骨彩繪後安放於此。小巧的人骨室與山坡上的教堂，訴說著獨特的在地文化。', map:'Beinhaus Hallstatt', transports:[{ mode:'步行', duration:'10 分鐘' }] },
+          { time:'14:30', title:'前往維也納 Wien', desc:'搭乘火車橫越奧地利，前往音樂之都維也納。車程較長，可欣賞窗外的鄉村與山景。', note:'車程約 3.5 小時，建議先備妥午餐與飲水。', map:'Wien Hauptbahnhof', transports:[{ mode:'火車', duration:'3.5 小時' }] },
+        ],
+      },
+      {
+        date:'12/16', weekday:'三', city:'維也納 Wien', lodging:'維也納',
+        weather:{ icon:'CloudSun', desc:'晴時多雲', high:6, low:0 },
+        items:[
+          { time:'09:00', title:'熊布朗宮 Schloss Schönbrunn', desc:'哈布斯堡王朝的夏宮，擁有 1,441 個房間的鵝黃色巴洛克宮殿，是西西公主與皇帝法蘭茲‧約瑟夫的居所。金碧輝煌的大廳、鏡廳與遼闊的皇家花園、全球最古老的動物園，共同列入世界文化遺產。', note:'建議購買 Sisi Ticket 套票，可一併參觀霍夫堡與家具博物館。', map:'Schloss Schönbrunn', transports:[{ mode:'地鐵', duration:'30 分鐘' }] },
+          { time:'13:30', title:'霍夫堡皇宮 Hofburg', desc:'統治奧地利逾六百年的哈布斯堡王朝冬宮，見證帝國興衰。內有西西公主博物館、皇家寢宮與璀璨的銀器收藏，還可欣賞世界聞名的西班牙騎術學校利比札白馬。', map:'Hofburg Wien', transports:[{ mode:'地鐵', duration:'25 分鐘' }] },
+          { time:'16:00', title:'市政廳前聖誕市集', desc:'維也納最盛大的耶誕市集在新哥德式市政廳前登場，燈飾璀璨、攤位林立，還有溜冰場與旋轉木馬，充滿節慶歡樂。', map:'Wiener Christkindlmarkt Rathausplatz', transports:[{ mode:'步行', duration:'15 分鐘' }] },
+        ],
+      },
+      {
+        date:'12/17', weekday:'四', city:'瓦豪河谷 Wachau', lodging:'維也納',
+        weather:{ icon:'Cloud', desc:'陰', high:5, low:-1 },
+        items:[
+          { time:'09:00', title:'梅爾克修道院 Stift Melk', desc:'矗立於多瑙河畔岩丘上的本篤會修道院，金黃色的巴洛克建築氣勢磅礡。以華麗的教堂與典藏近十萬冊古籍、天頂濕壁畫的圖書館聞名，是瓦豪河谷的門戶地標。', note:'冬季開放時間較短，圖書館與教堂需跟隨導覽參觀。', map:'Stift Melk', transports:[{ mode:'火車', duration:'1 小時' }] },
+          { time:'13:00', title:'瓦豪河谷 · 杜恩斯坦 Dürnstein', desc:'多瑙河最秀麗的一段河谷，列入世界文化遺產，兩岸點綴葡萄園、杏桃園與中世紀城堡遺跡。杜恩斯坦的藍白教堂尖塔，與傳說中曾囚禁英王理查一世的古堡，是河谷最迷人的風景。', map:'Dürnstein', transports:[{ mode:'公車', duration:'40 分鐘' }] },
+        ],
+      },
+      {
+        date:'12/18', weekday:'五', city:'維也納 Wien', lodging:'維也納',
+        weather:{ icon:'Sun', desc:'晴朗', high:7, low:1 },
+        items:[
+          { time:'09:30', title:'藝術史博物館 Kunsthistorisches Museum', desc:'哈布斯堡皇室數百年收藏的殿堂，本身即是一座華美的藝術品。館藏涵蓋魯本斯、維梅爾、拉斐爾與全球最完整的老彼得‧布勒哲爾油畫，圓頂咖啡廳更被譽為世界最美博物館咖啡館之一。', map:'Kunsthistorisches Museum Wien', transports:[{ mode:'地鐵', duration:'20 分鐘' }] },
+          { time:'13:00', title:'阿爾貝蒂娜博物館 Albertina', desc:'坐落於霍夫堡一隅的皇家宮邸，收藏逾百萬件版畫與素描，包括杜勒著名的《野兔》。常設展可一次飽覽莫內、竇加、畢卡索與克林姆等大師名作。', map:'Albertina Wien', transports:[{ mode:'步行', duration:'12 分鐘' }] },
+          { time:'15:30', title:'美景宮 Schloss Belvedere', desc:'歐根親王的巴洛克夏宮，由上、下美景宮與法式花園構成。上美景宮如今是奧地利美術館，鎮館之寶為克林姆的金箔名作《吻》，也是全球最大的克林姆作品收藏地。', note:'《吻》所在展廳人潮眾多，建議一開館即前往。', map:'Schloss Belvedere', transports:[{ mode:'公車', duration:'20 分鐘' }] },
+        ],
+      },
+      {
+        date:'12/19', weekday:'六', city:'維也納 → 桃園（返程）', lodging:'夜間航班（機上）',
+        weather:{ icon:'CloudSun', desc:'晴時多雲', high:6, low:0 },
+        items:[
+          { time:'09:00', title:'維也納國際機場報到', desc:'為 14 天的旅程畫下句點。提前抵達機場辦理登機、託運與退稅，把握最後採買伴手禮的時間。', note:'於機場辦理 Global Blue 退稅，商品與收據須隨身備查。', map:'Vienna International Airport', transports:[{ mode:'火車', duration:'20 分鐘' }] },
+          { time:'12:05', title:'航班起飛 · 返回台灣', desc:'搭上返程班機，帶著滿滿的回憶飛越歐亞大陸回家。' },
+        ],
+      },
+      {
+        date:'12/20', weekday:'日', city:'抵達桃園', lodging:'溫暖的家',
+        weather:{ icon:'Cloud', desc:'台北 多雲', high:21, low:16 },
+        items:[
+          { time:'06:40', title:'抵達桃園國際機場', desc:'平安返抵國門，圓滿結束這趟橫跨德國與奧地利、飽覽宮殿、雪景與耶誕市集的 14 天旅程。', note:'記得整理旅程照片與收據，核對記帳明細。', map:'桃園國際機場', transports:[{ mode:'飛機', duration:'13 小時' }] },
+        ],
+      },
+    ];
+
+    /* ---------- 住宿資訊（依日期精準對應，含 Google Maps 連結） ---------- */
+    const LODGING = (function () {
+      const L = {
+        munich:   { range:'12/08 - 12/10', country:'德國', city:'慕尼黑', hotel:'Stay KooooK Munich City', url:'https://www.google.com/maps/search/?api=1&query=Stay+KooooK+Munich+City' },
+        salzburg: { range:'12/11 - 12/13', country:'奧地利', city:'薩爾斯堡', hotel:'Design Hotel zum Hirschen Salzburg', url:'https://www.google.com/maps/search/?api=1&query=Design+Hotel+zum+Hirschen+Salzburg' },
+        hallstatt:{ range:'12/14', country:'奧地利', city:'哈修塔特', hotel:'Polreich Bed&Breakfast', url:'https://www.google.com/maps/search/?api=1&query=Polreich+Bed%26Breakfast+Hallstatt' },
+        motto:    { range:'12/15 - 12/16', country:'奧地利', city:'維也納', hotel:'Hotel MOTTO', url:'https://www.google.com/maps/search/?api=1&query=Hotel+MOTTO+Vienna' },
+        wolfensson:{ range:'12/17 - 12/18', country:'奧地利', city:'維也納', hotel:'Rooms by Wolfensson - Boutique Hotel', url:'https://www.google.com/maps/search/?api=1&query=Rooms+by+Wolfensson+-+Boutique+Hotel+Vienna' },
+      };
+      return {
+        '12/08':L.munich, '12/09':L.munich, '12/10':L.munich,
+        '12/11':L.salzburg, '12/12':L.salzburg, '12/13':L.salzburg,
+        '12/14':L.hallstatt,
+        '12/15':L.motto, '12/16':L.motto,
+        '12/17':L.wolfensson, '12/18':L.wolfensson,
+      };
+    })();
+
+    // 為假資料補上唯一 id
+    const seedDays = () => ITINERARY.map(d => ({
+      id: uid(),
+      date: d.date, weekday: d.weekday, city: d.city, lodging: d.lodging, weather: d.weather,
+      items: d.items.map(it => ({
+        id: uid(), ...it,
+        transports: (it.transports || []).map(tr => ({ id: uid(), ...tr })),
+      })),
+    }));
+
+    // 記帳項目結構：{ id, date, category, note, eur, twd, payment, payer, forWhom }
+    //   eur / twd：雙幣別金額，二擇一或皆填（未填為 null）
+    //   payment：信用卡 | 現金；payer：Sandy | Jason；forWhom：Sandy | Jason | 共同
+    const INIT_EXPENSES = [
+      { id:1, date:'12/07', category:'購物', note:'機場免稅店 伴手禮',                 eur:null, twd:2800, payment:'信用卡', payer:'Sandy', forWhom:'Jason' },
+      { id:2, date:'12/08', category:'交通', note:'慕尼黑機場快線 S-Bahn 一日票',      eur:14.8, twd:null, payment:'信用卡', payer:'Jason', forWhom:'共同' },
+      { id:3, date:'12/08', category:'餐飲', note:'聖誕市集 熱紅酒＋德式香腸',         eur:18.5, twd:null, payment:'現金',   payer:'Sandy', forWhom:'共同' },
+      { id:4, date:'12/09', category:'交通', note:'巴伐利亞邦票（新天鵝堡來回）',       eur:29.0, twd:null, payment:'信用卡', payer:'Jason', forWhom:'共同' },
+      { id:5, date:'12/09', category:'景點', note:'新天鵝堡門票',                       eur:15.0, twd:null, payment:'信用卡', payer:'Sandy', forWhom:'Sandy' },
+      { id:6, date:'12/11', category:'交通', note:'慕尼黑 → 薩爾斯堡 火車票',           eur:44.0, twd:null, payment:'信用卡', payer:'Jason', forWhom:'共同' },
+      { id:7, date:'12/12', category:'餐飲', note:'薩爾斯堡舊城 傳統炸豬排晚餐',         eur:52.0, twd:null, payment:'現金',   payer:'Sandy', forWhom:'共同' },
+      { id:8, date:'12/14', category:'交通', note:'薩爾斯堡 → 哈修塔特 火車＋接駁船',    eur:39.5, twd:null, payment:'信用卡', payer:'Jason', forWhom:'共同' },
+      { id:9, date:'12/16', category:'住宿', note:'維也納市區飯店一晚',                 eur:135.0, twd:null, payment:'信用卡', payer:'Jason', forWhom:'共同' },
+      { id:10, date:'12/18', category:'景點', note:'美景宮上宮門票（克林姆《吻》）',     eur:17.5, twd:null, payment:'現金',   payer:'Sandy', forWhom:'Sandy' },
+    ];
+
+    const money = (n) => TRIP.currency + n.toLocaleString('zh-TW', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+    /* ---------- 共用小元件 ---------- */
+    function WeatherBadge({ weather, loading, source }) {
+      return (
+        <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-sand-50 to-sand-100 border border-sand-200 px-4 py-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/70 text-oat-500">
+            <Icon name={weather.icon} size={26} strokeWidth={1.5} />
+          </div>
+          <div className="leading-tight flex-1 min-w-0">
+            <div className="text-[13px] text-ink-500 flex items-center gap-2">
+              <span className="truncate">{weather.desc}</span>
+              {loading && (
+                <span className="inline-flex items-center gap-1 text-[11px] text-ink-500/70">
+                  <span className="h-1.5 w-1.5 rounded-full bg-sage-500 animate-pulse" />更新中
+                </span>
+              )}
+            </div>
+            <div className="text-ink-700 font-medium">
+              <span className="text-lg">{weather.high}°</span>
+              <span className="text-ink-500 text-sm"> / {weather.low}°</span>
+            </div>
+          </div>
+          {!loading && (
+            <span className={"self-start rounded-full px-2 py-0.5 text-[10px] font-medium " +
+              (source === 'live' ? "bg-sage-500/15 text-sage-700" : "bg-sand-200 text-ink-500")}>
+              {source === 'live' ? '即時天氣' : '預估'}
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    // 依當日城市 + 日期，向 Open-Meteo 取得即時天氣；失敗則 fallback 靜態資料
+    function useDayWeather(day) {
+      const [wx, setWx] = useState(() => ({ ...day.weather, source: 'static', loading: false }));
+      useEffect(() => {
+        const geo = resolveGeo(day);
+        if (!geo || !isMMDD(day.date)) {
+          setWx({ ...day.weather, source: 'static', loading: false });
+          return;
+        }
+        let ignore = false;
+        setWx(w => ({ ...w, loading: true }));
+        const dateStr = toISODate(day.date);
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}` +
+          `&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto&start_date=${dateStr}&end_date=${dateStr}`;
+        fetch(url)
+          .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+          .then(d => {
+            if (ignore) return;
+            const dl = d && d.daily;
+            if (dl && dl.time && dl.time.length && dl.weathercode && dl.weathercode[0] != null) {
+              const w = wmoToWeather(dl.weathercode[0]);
+              setWx({
+                icon: w.icon, desc: w.desc,
+                high: Math.round(dl.temperature_2m_max[0]),
+                low: Math.round(dl.temperature_2m_min[0]),
+                source: 'live', loading: false,
+              });
+            } else {
+              setWx({ ...day.weather, source: 'static', loading: false });
+            }
+          })
+          .catch(() => { if (!ignore) setWx({ ...day.weather, source: 'static', loading: false }); });
+        return () => { ignore = true; };
+      }, [day.id]);
+      return wx;
+    }
+
+    function MapPlaceholder() {
+      return (
+        <div className="relative mt-4 h-40 w-full overflow-hidden rounded-2xl border border-sand-200 bg-sand-100">
+          <div className="absolute inset-0 opacity-[0.5]"
+            style={{ backgroundImage:'radial-gradient(#D8CFBE 1px, transparent 1px)', backgroundSize:'16px 16px' }} />
+          <div className="absolute left-6 top-8 h-[2px] w-40 rotate-6 bg-sand-300 rounded-full" />
+          <div className="absolute left-16 bottom-10 h-[2px] w-52 -rotate-12 bg-sand-300 rounded-full" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-ink-500">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-soft text-sage-600">
+              <Icon name="MapPin" size={22} />
+            </div>
+            <span className="text-[13px] mt-1">互動地圖示意</span>
+            <span className="text-[11px] text-ink-500/70">點擊行程卡片的「在地圖中開啟」查看實際位置</span>
+          </div>
+        </div>
+      );
+    }
+
+    /* ---------- 住宿資訊卡（含 Google Maps 連結） ---------- */
+    function LodgingCard({ day }) {
+      const info = LODGING[day.date];
+      if (!info) {
+        return (
+          <div className="flex items-center gap-2 rounded-2xl border border-sand-200 bg-sand-50/60 px-4 py-3 text-[13px] text-ink-600">
+            <Icon name="Moon" size={15} className="text-oat-500 shrink-0" /> 今晚：{day.lodging}
+          </div>
+        );
+      }
+      return (
+        <div className="rounded-2xl border border-sand-200 bg-gradient-to-br from-sand-50 to-sand-100 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 text-[11px] font-medium text-sage-600">
+                <Icon name="BedDouble" size={13} /> 今晚住宿 · {info.range}
+              </div>
+              <div className="mt-1 font-semibold text-ink-800 leading-snug">{info.hotel}</div>
+              <div className="mt-0.5 text-[12.5px] text-ink-500 flex items-center gap-1">
+                <Icon name="MapPin" size={12} className="text-oat-500" /> {info.country} · {info.city}
+              </div>
+            </div>
+            <a href={info.url} target="_blank" rel="noopener noreferrer"
+              className="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-sage-500/40 bg-sage-500/10 px-3 py-2 text-[12.5px] font-medium text-sage-700 hover:bg-sage-500/20 transition">
+              <Icon name="MapPin" size={14} /> 地圖
+              <Icon name="ExternalLink" size={12} className="opacity-70" />
+            </a>
+          </div>
+        </div>
+      );
+    }
+
+    /* ---------- 交通方塊（垂直堆疊 · 可拖曳排序 · 多段獨立節點） ---------- */
+    function TransportBlock({ transports, onAdd, onEdit, onRemove, onReorder }) {
+      const list = transports || [];
+      const [dragIdx, setDragIdx] = useState(null);
+      const [overIdx, setOverIdx] = useState(null);
+
+      const handleDrop = (e, toIdx) => {
+        // 以 dataTransfer 攜帶來源索引，較不依賴尚未 commit 的 state（穩健）
+        let from = dragIdx;
+        const dt = parseInt((e.dataTransfer && e.dataTransfer.getData('text/plain')) || '', 10);
+        if (!isNaN(dt)) from = dt;
+        if (from != null && from !== toIdx) onReorder(from, toIdx);
+        setDragIdx(null); setOverIdx(null);
+      };
+
+      return (
+        <div className="grid grid-cols-[20px_1fr] gap-3">
+          <div className="relative flex justify-center">
+            <span className="absolute inset-y-0 w-px bg-sand-300" />
+          </div>
+          <div className="py-1.5 space-y-1.5">
+            {list.map((tr, i) => (
+              <div key={tr.id}
+                draggable
+                onDragStart={(e)=>{ setDragIdx(i); e.dataTransfer.effectAllowed='move'; try{ e.dataTransfer.setData('text/plain', String(i)); }catch(_){} }}
+                onDragOver={(e)=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; if(overIdx!==i) setOverIdx(i); }}
+                onDrop={(e)=>{ e.preventDefault(); handleDrop(e, i); }}
+                onDragEnd={()=>{ setDragIdx(null); setOverIdx(null); }}
+                className={"flex items-center gap-2 rounded-xl border bg-sand-100 pl-1.5 pr-1 py-1.5 text-[12.5px] text-ink-600 shadow-sm transition " +
+                  (dragIdx===i ? "opacity-40 scale-[0.99] " : "") +
+                  (overIdx===i && dragIdx!=null && dragIdx!==i ? "border-sage-400 ring-2 ring-sage-400/40 " : "border-sand-300 ")}>
+                <span className="cursor-grab active:cursor-grabbing text-ink-500/40 shrink-0" title="按住拖曳可排序">
+                  <Icon name="GripVertical" size={15} />
+                </span>
+                <Icon name={transportIcon(tr.mode)} size={15} strokeWidth={2} className="text-sage-600 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium">{tr.mode}</span>
+                  <span className="mx-1 text-sand-300">·</span>
+                  <span>{tr.duration}</span>
+                </div>
+                <button type="button" onClick={()=>onEdit(tr)} title="編輯交通"
+                  className="p-1 text-ink-500/50 hover:text-sage-700 rounded transition"><Icon name="Pencil" size={13} /></button>
+                <button type="button" onClick={()=>onRemove(tr.id)} title="刪除交通"
+                  className="p-1 text-ink-500/50 hover:text-clay-500 rounded transition"><Icon name="Trash2" size={13} /></button>
+              </div>
+            ))}
+            <button type="button" onClick={onAdd}
+              className="inline-flex items-center gap-1 rounded-full border border-dashed border-sand-300 px-2.5 py-1 text-[11.5px] text-ink-500 hover:text-sage-700 hover:border-sage-400 hover:bg-sand-50 transition">
+              <Icon name="Plus" size={12} strokeWidth={2.4} /> 新增交通
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    /* ---------- 交通 新增／編輯 彈窗 ---------- */
+    function TransportModal({ initial, onClose, onSave }) {
+      const isEdit = !!initial;
+      const parseDur = (str) => {
+        const m = (str || '').match(/(\d+(?:\.\d+)?)\s*(小時|分鐘)/);
+        return m ? { value: m[1], unit: m[2] } : { value: '', unit: '分鐘' };
+      };
+      const initDur = parseDur(initial ? initial.duration : '');
+      const [mode, setMode] = useState(initial ? initial.mode : '步行');
+      const [durValue, setDurValue] = useState(initDur.value);
+      const [durUnit, setDurUnit] = useState(initDur.unit);
+      const [error, setError] = useState('');
+
+      const submit = (e) => {
+        e.preventDefault();
+        if (!mode) { setError('請選擇交通方式'); return; }
+        const duration = durValue !== '' ? `${durValue} ${durUnit}` : '—';
+        onSave({ mode, duration });
+      };
+
+      const inputCls = "w-full rounded-xl border border-sand-200 bg-sand-50/50 px-3.5 py-2.5 text-sm text-ink-800 placeholder:text-ink-500/50 focus:outline-none focus:ring-2 focus:ring-sage-400/40 focus:border-sage-400 transition";
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+          <div className="absolute inset-0 bg-ink-800/25 backdrop-blur-[2px]" />
+          <form onClick={e=>e.stopPropagation()} onSubmit={submit}
+            className="relative w-full max-w-sm rounded-3xl border border-sand-200 bg-white shadow-soft p-6 pop-in">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-2 text-ink-800 font-medium">
+                <Icon name={transportIcon(mode)} size={18} className="text-sage-600" /> {isEdit ? '編輯交通' : '新增交通'}
+              </div>
+              <button type="button" onClick={onClose} className="text-ink-500 hover:text-ink-700 p-1 -mr-1">
+                <Icon name="X" size={18} />
+              </button>
+            </div>
+
+            <label className="block text-[12px] text-ink-500 mb-2">交通方式</label>
+            <div className="flex flex-wrap gap-2">
+              {TRANSPORT_KEYS.map(m => {
+                const on = mode === m;
+                return (
+                  <button type="button" key={m} onClick={()=>setMode(m)}
+                    className={"inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[12px] transition " +
+                      (on ? "bg-sage-600 border-sage-600 text-white" : "bg-white border-sand-300 text-ink-600 hover:bg-sand-100")}>
+                    <Icon name={transportIcon(m)} size={13} strokeWidth={2} /> {m}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-[12px] text-ink-500 mb-1.5">預估移動時間</label>
+              <div className="flex gap-2">
+                <input type="number" min="0" step="1" className={inputCls} value={durValue}
+                  onChange={e=>setDurValue(e.target.value)} placeholder="數值，如 15" autoFocus />
+                <select className={"w-24 shrink-0 " + inputCls} value={durUnit} onChange={e=>setDurUnit(e.target.value)}>
+                  <option value="分鐘">分鐘</option>
+                  <option value="小時">小時</option>
+                </select>
+              </div>
+            </div>
+
+            {error && (
+              <div className="mt-3 flex items-center gap-1.5 rounded-xl bg-clay-400/10 border border-clay-400/30 px-3 py-2 text-[12.5px] text-clay-500">
+                <Icon name="TriangleAlert" size={14} className="shrink-0" /> {error}
+              </div>
+            )}
+
+            <div className="mt-6 flex gap-2">
+              <button type="button" onClick={onClose}
+                className="flex-1 rounded-xl border border-sand-300 bg-white text-ink-600 text-sm font-medium py-2.5 hover:bg-sand-100 transition">
+                取消
+              </button>
+              <button type="submit"
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-sage-600 hover:bg-sage-700 active:scale-[0.99] text-white text-sm font-medium py-2.5 transition">
+                <Icon name={isEdit ? 'Check' : 'Plus'} size={16} strokeWidth={2.2} /> {isEdit ? '儲存變更' : '加入交通'}
+              </button>
+            </div>
+          </form>
+        </div>
+      );
+    }
+
+    /* ---------- 行程 新增／編輯 彈窗 ---------- */
+    function ItemModal({ dayLabel, initial, onClose, onSubmit }) {
+      const isEdit = !!initial;
+      const [form, setForm] = useState(() => ({
+        time: initial ? initial.time : '10:00',
+        title: initial ? initial.title : '',
+        desc: initial ? initial.desc : '',
+        note: initial && initial.note ? initial.note : '',
+        map: initial && initial.map ? initial.map : '',
+      }));
+      const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+      const submit = (e) => {
+        e.preventDefault();
+        if (!form.title.trim()) return;
+        onSubmit({
+          time: form.time || '00:00',
+          title: form.title.trim(),
+          desc: form.desc.trim() || '（尚無簡介）',
+          note: form.note.trim(),
+          map: form.map.trim(),
+        });
+      };
+
+      const inputCls = "w-full rounded-xl border border-sand-200 bg-sand-50/50 px-3.5 py-2.5 text-sm text-ink-800 placeholder:text-ink-500/50 focus:outline-none focus:ring-2 focus:ring-sage-400/40 focus:border-sage-400 transition";
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+          <div className="absolute inset-0 bg-ink-800/25 backdrop-blur-[2px]" />
+          <form onClick={e=>e.stopPropagation()} onSubmit={submit}
+            className="relative w-full max-w-md rounded-3xl border border-sand-200 bg-white shadow-soft p-6 pop-in max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between mb-1">
+              <div className="flex items-center gap-2 text-ink-800 font-medium">
+                <Icon name={isEdit ? 'Pencil' : 'MapPinPlus'} size={18} className="text-sage-600" /> {isEdit ? '編輯行程' : '新增行程'}
+              </div>
+              <button type="button" onClick={onClose} className="text-ink-500 hover:text-ink-700 p-1 -mr-1">
+                <Icon name="X" size={18} />
+              </button>
+            </div>
+            <p className="text-[12px] text-ink-500 mb-4">{isEdit ? '修改' : '加入到'} {dayLabel}</p>
+
+            <div className="grid grid-cols-[120px_1fr] gap-3">
+              <div>
+                <label className="block text-[12px] text-ink-500 mb-1.5">時間</label>
+                <input className={inputCls} type="time" value={form.time} onChange={e=>set('time', e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-[12px] text-ink-500 mb-1.5">景點標題</label>
+                <input className={inputCls} value={form.title} onChange={e=>set('title', e.target.value)} placeholder="例如：新天鵝堡" autoFocus />
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <label className="block text-[12px] text-ink-500 mb-1.5">景點簡介</label>
+              <textarea className={inputCls + " resize-none"} rows="3" value={form.desc} onChange={e=>set('desc', e.target.value)} placeholder="歷史背景、特色介紹…" />
+            </div>
+
+            <div className="mt-3">
+              <label className="block text-[12px] text-ink-500 mb-1.5">備註</label>
+              <textarea className={inputCls + " resize-none"} rows="2" value={form.note} onChange={e=>set('note', e.target.value)} placeholder="門票預訂資訊、注意事項…" />
+            </div>
+
+            <div className="mt-3">
+              <label className="block text-[12px] text-ink-500 mb-1.5">Google Maps 連結 / 地點名稱（選填）</label>
+              <div className="relative">
+                <Icon name="MapPin" size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500/50" />
+                <input className={inputCls + " pl-9"} value={form.map} onChange={e=>set('map', e.target.value)}
+                  placeholder="貼上地圖網址，或輸入地點名稱" />
+              </div>
+            </div>
+            <p className="mt-2 text-[11.5px] text-ink-500/70">交通方式已改為卡片間的獨立節點，請於時間軸上以「新增交通」管理。</p>
+
+            <div className="mt-6 flex gap-2">
+              <button type="button" onClick={onClose}
+                className="flex-1 rounded-xl border border-sand-300 bg-white text-ink-600 text-sm font-medium py-2.5 hover:bg-sand-100 transition">
+                取消
+              </button>
+              <button type="submit"
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-sage-600 hover:bg-sage-700 active:scale-[0.99] text-white text-sm font-medium py-2.5 transition">
+                <Icon name={isEdit ? 'Check' : 'Plus'} size={16} strokeWidth={2.2} /> {isEdit ? '儲存變更' : '加入行程'}
+              </button>
+            </div>
+          </form>
+        </div>
+      );
+    }
+
+    /* ---------- 橫向日期選單（Day 0–13） ---------- */
+    function DateTabs({ days, activeId, onSelect, onAddDay }) {
+      return (
+        <div className="scroll-x -mx-1 flex gap-2.5 overflow-x-auto px-1 pb-2">
+          {days.map((d, i) => {
+            const active = d.id === activeId;
+            return (
+              <button key={d.id} onClick={()=>onSelect(d.id)}
+                className={"shrink-0 w-[96px] rounded-2xl border px-3 py-3 text-left transition " +
+                  (active
+                    ? "bg-sage-600 border-sage-600 text-white shadow-soft"
+                    : "bg-white border-sand-200 text-ink-700 hover:border-sage-400 hover:bg-sand-50")}>
+                <div className={"text-[10px] font-medium tracking-wide " + (active ? "text-white/75" : "text-sage-600")}>DAY {i}</div>
+                <div className="mt-0.5 font-semibold leading-tight">{d.date}</div>
+                <div className={"mt-1 flex items-center gap-1 text-[11px] " + (active ? "text-white/80" : "text-ink-500")}>
+                  <Icon name={d.weather.icon} size={12} /> {d.weather.high}°
+                  <span className={active ? "text-white/60" : "text-ink-500/70"}>（{d.weekday}）</span>
+                </div>
+              </button>
+            );
+          })}
+          <button onClick={onAddDay}
+            className="shrink-0 w-[96px] rounded-2xl border border-dashed border-sand-300 text-ink-500 hover:text-sage-700 hover:border-sage-400 hover:bg-sand-50 transition flex flex-col items-center justify-center gap-1 py-3">
+            <Icon name="CalendarPlus" size={20} />
+            <span className="text-[12px]">新增一天</span>
+          </button>
+        </div>
+      );
+    }
+
+    /* ---------- 單日行程面板 ---------- */
+    function DayDetail({ day, index, onAddItem, onEditItem, onRemoveItem, onReorder,
+                         onAddTransport, onEditTransport, onRemoveTransport, onReorderTransport }) {
+      const wx = useDayWeather(day);
+      const [dragIdx, setDragIdx] = useState(null);
+      const [overIdx, setOverIdx] = useState(null);
+
+      const handleDrop = (e, toIdx) => {
+        // 優先由 dataTransfer 取得來源索引（不依賴尚未 commit 的 state，較穩健）
+        let from = dragIdx;
+        const dt = parseInt((e.dataTransfer && e.dataTransfer.getData('text/plain')) || '', 10);
+        if (!isNaN(dt)) from = dt;
+        if (from != null && from !== toIdx) onReorder(day.id, from, toIdx);
+        setDragIdx(null); setOverIdx(null);
+      };
+
+      return (
+        <div className="fade-in rounded-3xl border border-sand-200 bg-white shadow-soft p-5 sm:p-6">
+          {/* 標頭 */}
+          <div>
+            <div className="text-[11px] font-medium tracking-wide text-sage-600">DAY {index} · {day.date}（{day.weekday}）</div>
+            <div className="mt-1 flex items-center gap-2 text-lg font-semibold text-ink-800">
+              <Icon name="MapPin" size={18} className="text-oat-500" />
+              <span>{day.city}</span>
+            </div>
+          </div>
+
+          {/* 住宿資訊（顯眼呈現，含 Google Maps 連結） */}
+          <div className="mt-4"><LodgingCard day={day} /></div>
+
+          {/* 天氣（Open-Meteo 即時 / 靜態 fallback） */}
+          <div className="mt-3"><WeatherBadge weather={wx} loading={wx.loading} source={wx.source} /></div>
+
+          {/* 時間軸 */}
+          <div className="mt-5">
+            {day.items.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-sand-300 py-8 text-center text-sm text-ink-500">
+                這天還沒有行程，點下方按鈕新增第一個景點。
+              </div>
+            )}
+
+            {day.items.map((it, i) => (
+              <React.Fragment key={it.id}>
+                {/* 交通方塊（可多段獨立節點）：顯示於前一張卡片與本卡片之間 */}
+                <TransportBlock
+                  transports={it.transports}
+                  onAdd={()=>onAddTransport(day.id, it.id)}
+                  onEdit={(tr)=>onEditTransport(day.id, it.id, tr)}
+                  onRemove={(trId)=>onRemoveTransport(day.id, it.id, trId)}
+                  onReorder={(from, to)=>onReorderTransport(day.id, it.id, from, to)}
+                />
+
+                <div
+                  draggable
+                  onDragStart={(e)=>{ setDragIdx(i); e.dataTransfer.effectAllowed='move'; try{ e.dataTransfer.setData('text/plain', String(i)); }catch(_){} }}
+                  onDragOver={(e)=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; if(overIdx!==i) setOverIdx(i); }}
+                  onDrop={(e)=>{ e.preventDefault(); handleDrop(e, i); }}
+                  onDragEnd={()=>{ setDragIdx(null); setOverIdx(null); }}
+                  className={"group grid grid-cols-[20px_1fr] gap-3 transition " + (dragIdx===i ? "opacity-40" : "")}>
+                  {/* 左側時間軸與節點 */}
+                  <div className="relative flex justify-center">
+                    <span className="absolute inset-y-0 w-px bg-sand-300" />
+                    <span className="relative z-10 mt-1.5 h-3.5 w-3.5 rounded-full bg-white border-2 border-sage-500" />
+                  </div>
+
+                  {/* 右側內容 */}
+                  <div className="pb-6">
+                    <div className="flex items-center gap-2 text-sage-700 font-medium text-sm">
+                      <Icon name="Clock" size={14} /> {it.time}
+                    </div>
+                    <div className={"mt-1 rounded-2xl border bg-sand-50/50 p-4 transition " +
+                      (overIdx===i && dragIdx!=null && dragIdx!==i ? "border-sage-400 ring-2 ring-sage-400/40" : "border-sand-200")}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 min-w-0">
+                          <span className="mt-0.5 shrink-0 text-ink-500/40 cursor-grab active:cursor-grabbing" title="按住拖曳可排序">
+                            <Icon name="GripVertical" size={16} />
+                          </span>
+                          <div className="font-medium text-ink-800">{it.title}</div>
+                        </div>
+                        {/* 右上角：編輯 + 刪除 */}
+                        <div className="flex items-center gap-0.5 shrink-0 -mt-1 -mr-1">
+                          <button onClick={()=>onEditItem(day.id, it)}
+                            className="text-ink-500/60 hover:text-sage-700 hover:bg-sand-100 rounded-lg p-1.5 transition"
+                            title="編輯此行程">
+                            <Icon name="Pencil" size={15} />
+                          </button>
+                          <button onClick={()=>onRemoveItem(day.id, it.id)}
+                            className="text-ink-500/60 hover:text-clay-500 hover:bg-sand-100 rounded-lg p-1.5 transition"
+                            title="刪除此行程">
+                            <Icon name="Trash2" size={15} />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="mt-1 text-[13.5px] leading-relaxed text-ink-600">{it.desc}</p>
+                      {it.note && (
+                        <div className="mt-3 flex items-start gap-1.5 rounded-xl bg-oat-400/10 border border-oat-400/25 px-3 py-2 text-[12.5px] text-ink-600">
+                          <Icon name="Info" size={14} className="text-oat-500 mt-0.5 shrink-0" />
+                          <span>{it.note}</span>
+                        </div>
+                      )}
+                      {it.map && (
+                        <a href={mapHref(it.map)} target="_blank" rel="noopener noreferrer"
+                          className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-sage-500/40 bg-sage-500/10 px-3 py-1.5 text-[12.5px] font-medium text-sage-700 hover:bg-sage-500/20 transition">
+                          <Icon name="MapPin" size={13} /> 在地圖中開啟
+                          <Icon name="ExternalLink" size={12} className="opacity-70" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
+
+          {/* 新增行程按鈕 */}
+          <button onClick={()=>onAddItem(day.id)}
+            className="mt-1 w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-dashed border-sand-300 py-3 text-sm text-ink-600 hover:text-sage-700 hover:border-sage-400 hover:bg-sand-50 transition">
+            <Icon name="Plus" size={16} strokeWidth={2.2} /> 新增行程
+          </button>
+
+          {/* 地圖 */}
+          <MapPlaceholder />
+        </div>
+      );
+    }
+
+    function ItineraryView() {
+      const [days, setDays] = usePersistentState(LS_KEYS.days, seedDays);
+      // 由 localStorage 載入後，將 uid 計數器推進到大於所有既有 id，避免新資料 id 撞號
+      useMemo(() => {
+        let max = _uid;
+        days.forEach(d => {
+          if (typeof d.id === 'number') max = Math.max(max, d.id);
+          d.items.forEach(it => { if (typeof it.id === 'number') max = Math.max(max, it.id); });
+        });
+        _uid = max;
+      }, []);
+      const [activeId, setActiveId] = useState(() => (days[1] ? days[1].id : (days[0] ? days[0].id : null)));
+      // modal 狀態：null=關閉；{ dayId, item }（item 為 null 代表新增）
+      const [modal, setModal] = useState(null);
+      const [transportModal, setTransportModal] = useState(null);
+
+      const active = days.find(d => d.id === activeId) || days[0] || null;
+      const activeIndex = active ? days.findIndex(d => d.id === active.id) : -1;
+
+      const addItem = (dayId, item) => {
+        setDays(ds => ds.map(d => d.id === dayId
+          ? { ...d, items: [...d.items, { id: uid(), transports: [], ...item }] }
+          : d));
+        setModal(null);
+      };
+
+      // 交通節點 CRUD（transportModal：{ dayId, itemId, tr }，tr 為 null 代表新增）
+      const removeTransport = (dayId, itemId, trId) => {
+        setDays(ds => ds.map(d => d.id !== dayId ? d : {
+          ...d, items: d.items.map(it => it.id !== itemId ? it : {
+            ...it, transports: (it.transports || []).filter(x => x.id !== trId),
+          }),
+        }));
+      };
+      const reorderTransport = (dayId, itemId, from, to) => {
+        setDays(ds => ds.map(d => d.id !== dayId ? d : {
+          ...d, items: d.items.map(it => {
+            if (it.id !== itemId) return it;
+            const list = [...(it.transports || [])];
+            if (from < 0 || from >= list.length || to < 0 || to >= list.length) return it;
+            const [moved] = list.splice(from, 1);
+            list.splice(to, 0, moved);
+            return { ...it, transports: list };
+          }),
+        }));
+      };
+      const saveTransport = (dayId, itemId, tr, values) => {
+        setDays(ds => ds.map(d => d.id !== dayId ? d : {
+          ...d, items: d.items.map(it => {
+            if (it.id !== itemId) return it;
+            const list = it.transports || [];
+            return {
+              ...it,
+              transports: tr
+                ? list.map(x => x.id === tr.id ? { ...x, ...values } : x)
+                : [...list, { id: uid(), ...values }],
+            };
+          }),
+        }));
+        setTransportModal(null);
+      };
+
+      const updateItem = (dayId, itemId, patch) => {
+        setDays(ds => ds.map(d => d.id === dayId
+          ? { ...d, items: d.items.map(i => i.id === itemId ? { ...i, ...patch } : i) }
+          : d));
+        setModal(null);
+      };
+
+      const removeItem = (dayId, itemId) => {
+        setDays(ds => ds.map(d => d.id === dayId
+          ? { ...d, items: d.items.filter(i => i.id !== itemId) }
+          : d));
+      };
+
+      // 拖曳排序：將 from 位置的行程移動到 to 位置（會自動經由 usePersistentState 寫入 localStorage）
+      const reorderItems = (dayId, from, to) => {
+        setDays(ds => ds.map(d => {
+          if (d.id !== dayId) return d;
+          const items = [...d.items];
+          if (from < 0 || from >= items.length || to < 0 || to >= items.length) return d;
+          const [moved] = items.splice(from, 1);
+          items.splice(to, 0, moved);
+          return { ...d, items };
+        }));
+      };
+
+      const addDay = () => {
+        const id = uid();
+        const w = WEATHER_OPTIONS[1];
+        setDays(ds => [...ds, {
+          id, date: '待定', weekday: '—', city: '新的一天', lodging: '待安排',
+          weather: { icon: w.icon, desc: w.desc, high: 5, low: 0 },
+          items: [],
+        }]);
+        setActiveId(id);
+      };
+
+      const modalDay = modal ? days.find(d => d.id === modal.dayId) : null;
+      const modalLabel = modalDay ? `DAY ${days.findIndex(d=>d.id===modalDay.id)} · ${modalDay.date}` : '';
+
+      return (
+        <div className="space-y-4">
+          <DateTabs days={days} activeId={active ? active.id : null} onSelect={setActiveId} onAddDay={addDay} />
+
+          {active ? (
+            <DayDetail
+              key={active.id}
+              day={active}
+              index={activeIndex}
+              onAddItem={(dayId)=>setModal({ dayId, item: null })}
+              onEditItem={(dayId, item)=>setModal({ dayId, item })}
+              onRemoveItem={removeItem}
+              onReorder={reorderItems}
+              onAddTransport={(dayId, itemId)=>setTransportModal({ dayId, itemId, tr: null })}
+              onEditTransport={(dayId, itemId, tr)=>setTransportModal({ dayId, itemId, tr })}
+              onRemoveTransport={removeTransport}
+              onReorderTransport={reorderTransport}
+            />
+          ) : (
+            <div className="rounded-3xl border border-dashed border-sand-300 bg-white/60 py-14 text-center">
+              <div className="text-ink-500 text-sm">目前沒有任何行程</div>
+              <button onClick={addDay}
+                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-sage-600 hover:bg-sage-700 text-white text-sm font-medium px-4 py-2.5 transition">
+                <Icon name="CalendarPlus" size={16} /> 新增第一天行程
+              </button>
+            </div>
+          )}
+
+          {modalDay && (
+            <ItemModal
+              dayLabel={modalLabel}
+              initial={modal.item}
+              onClose={()=>setModal(null)}
+              onSubmit={(values)=> modal.item
+                ? updateItem(modalDay.id, modal.item.id, values)
+                : addItem(modalDay.id, values)}
+            />
+          )}
+
+          {transportModal && (
+            <TransportModal
+              initial={transportModal.tr}
+              onClose={()=>setTransportModal(null)}
+              onSave={(values)=>saveTransport(transportModal.dayId, transportModal.itemId, transportModal.tr, values)}
+            />
+          )}
+        </div>
+      );
+    }
+
+    /* ---------- 記帳：常數與工具 ---------- */
+    const EXCHANGE_RATE = 35;                 // 預設匯率：1 EUR = 35 TWD
+    const PAYMENTS = ['信用卡', '現金'];
+    const PAYERS = ['Sandy', 'Jason'];
+    const FOR_WHOM = ['Sandy', 'Jason', '共同'];
+    const SPLIT_META = {
+      'Sandy': { label:'Sandy 個人', color:'#8C9C84' }, // sage
+      'Jason': { label:'Jason 個人', color:'#B8997A' }, // oat
+      '共同':  { label:'共同消費',   color:'#B4826F' }, // clay
+    };
+    const twdMoney = (n) => 'NT$' + Math.round(n).toLocaleString('zh-TW');
+    // 計算單筆的有效歐元 / 台幣金額（未填的幣別自動依匯率換算）
+    function effAmounts(e) {
+      const eurV = (e.eur === '' || e.eur == null) ? null : Number(e.eur);
+      const twdV = (e.twd === '' || e.twd == null) ? null : Number(e.twd);
+      const eur = eurV != null ? eurV : (twdV != null ? twdV / EXCHANGE_RATE : 0);
+      const twd = twdV != null ? twdV : (eurV != null ? eurV * EXCHANGE_RATE : 0);
+      return { eur, twd, eurEntered: eurV != null, twdEntered: twdV != null };
+    }
+    // 由行程資料（localStorage 或 seed）取出所有有效日期，供下拉選單使用
+    function getTripDates() {
+      const stored = loadLS(LS_KEYS.days);
+      const src = Array.isArray(stored) && stored.length ? stored : ITINERARY;
+      // 保留原始 Day 序號（0-based）作為標籤前綴，例如「DAY 0 · 12/07（一）」
+      return src
+        .map((d, i) => ({ value: d.date, weekday: d.weekday, dayNo: i, valid: isMMDD(d.date) }))
+        .filter(x => x.valid)
+        .map(x => ({ value: x.value, label: `DAY ${x.dayNo} · ${x.value}（${x.weekday}）` }));
+    }
+    function defaultExpenseDate(dates) {
+      try {
+        const d = new Date();
+        const today = String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getDate()).padStart(2, '0');
+        if (dates.some(x => x.value === today)) return today;
+      } catch (e) {}
+      return dates[0] ? dates[0].value : '';
+    }
+
+    /* ---------- AA 拆帳結算 ----------
+       共同消費：兩人各分攤 50%；指定對象：該對象全額負擔；付款人＝對象：不拆帳。
+       以「實付 − 應分攤 = 淨額」推算最終抵銷結果（EUR / TWD 分別計算）。 */
+    function computeSettlement(expenses) {
+      const build = (cur) => {
+        const paid = { Sandy: 0, Jason: 0 };
+        const share = { Sandy: 0, Jason: 0 };
+        expenses.forEach(e => {
+          const amt = effAmounts(e)[cur];
+          if (!amt) return;
+          if (e.payer === 'Sandy' || e.payer === 'Jason') paid[e.payer] += amt;
+          if (e.forWhom === '共同') { share.Sandy += amt / 2; share.Jason += amt / 2; }
+          else if (e.forWhom === 'Sandy' || e.forWhom === 'Jason') share[e.forWhom] += amt;
+        });
+        const netSandy = paid.Sandy - share.Sandy;
+        let settle = null;
+        if (Math.abs(netSandy) >= 0.005) {
+          settle = netSandy > 0
+            ? { debtor: 'Jason', creditor: 'Sandy', amt: netSandy }
+            : { debtor: 'Sandy', creditor: 'Jason', amt: -netSandy };
+        }
+        return {
+          Sandy: { paid: paid.Sandy, share: share.Sandy, net: netSandy },
+          Jason: { paid: paid.Jason, share: share.Jason, net: paid.Jason - share.Jason },
+          settle,
+        };
+      };
+      return { eur: build('eur'), twd: build('twd') };
+    }
+
+    /* ---------- 記帳資料匯出 CSV（含 UTF-8 BOM，Excel 中文不亂碼） ---------- */
+    function exportExpensesCSV(expenses) {
+      const headers = ['日期', '類別', '項目說明', '歐元金額(€)', '台幣金額(NT$)', '付款方式', '付款人', '分攤對象'];
+      const esc = (v) => {
+        let s = String(v == null ? '' : v);
+        if (/[",\n\r]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+        return s;
+      };
+      const rows = expenses.slice()
+        .sort((a, b) => a.date.localeCompare(b.date) || (a.id - b.id))
+        .map(e => {
+          const a = effAmounts(e);
+          return [e.date, e.category, e.note, a.eur.toFixed(2), Math.round(a.twd), e.payment, e.payer, e.forWhom].map(esc).join(',');
+        });
+      const BOM = String.fromCharCode(0xFEFF); // UTF-8 BOM，確保 Excel 開啟繁體中文不亂碼
+      const csv = BOM + [headers.map(esc).join(','), ...rows].join('\r\n');
+      try {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const d = new Date();
+        const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `德國奧地利之旅_記帳明細_${stamp}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      } catch (err) {}
+    }
+
+    /* ---------- Segmented Control（單選膠囊） ---------- */
+    function Segmented({ options, value, onChange, full }) {
+      return (
+        <div className={"inline-flex rounded-xl border border-sand-300 bg-sand-50/60 p-0.5 " + (full ? "w-full" : "")}>
+          {options.map(o => (
+            <button type="button" key={o} onClick={()=>onChange(o)}
+              className={"px-3 py-2 text-[12.5px] rounded-lg transition text-center " + (full ? "flex-1" : "") + " " +
+                (value === o ? "bg-sage-600 text-white shadow-sm" : "text-ink-600 hover:bg-sand-100")}>
+              {o}
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    /* ---------- 分攤比例進度條（iOS 儲存空間風格） ---------- */
+    function SplitBar({ expenses }) {
+      const totals = { 'Sandy':0, 'Jason':0, '共同':0 };
+      expenses.forEach(e => { totals[e.forWhom] = (totals[e.forWhom] || 0) + effAmounts(e).eur; });
+      const grand = totals['Sandy'] + totals['Jason'] + totals['共同'];
+      const pct = (v) => (grand > 0 ? (v / grand * 100) : 0);
+      const order = ['Sandy', 'Jason', '共同'];
+
+      return (
+        <div>
+          <div className="flex items-center gap-2 text-[12.5px] text-ink-500 mb-2">
+            <Icon name="ChartPie" size={14} className="text-sage-600" /> 分攤比例
+          </div>
+          <div className="flex h-3 w-full gap-[2px] overflow-hidden rounded-full bg-sand-100">
+            {grand === 0
+              ? <div className="flex-1" />
+              : order.map(k => pct(totals[k]) > 0 && (
+                  <div key={k} className="h-full first:rounded-l-full last:rounded-r-full transition-all duration-500"
+                    style={{ width: pct(totals[k]) + '%', background: SPLIT_META[k].color }} title={SPLIT_META[k].label} />
+                ))}
+          </div>
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {order.map(k => (
+              <div key={k} className="flex items-center gap-2 rounded-xl border border-sand-200 px-3 py-2">
+                <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: SPLIT_META[k].color }} />
+                <div className="leading-tight min-w-0">
+                  <div className="text-[12px] text-ink-600">{SPLIT_META[k].label}</div>
+                  <div className="text-[12.5px] font-medium text-ink-800">
+                    {pct(totals[k]).toFixed(0)}% · {money(totals[k])}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    /* ---------- 總花費卡片（雙幣別 + 分攤） ---------- */
+    function SummaryCard({ expenses }) {
+      const { totalEur, totalTwd } = useMemo(() => {
+        let te = 0, tt = 0;
+        expenses.forEach(e => { const a = effAmounts(e); te += a.eur; tt += a.twd; });
+        return { totalEur: te, totalTwd: tt };
+      }, [expenses]);
+      return (
+        <div className="rounded-3xl border border-sand-200 bg-white shadow-soft p-6 sm:p-7">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-ink-500 text-sm">
+                <Icon name="Wallet" size={16} className="text-sage-600" /> 目前總花費
+              </div>
+              <div className="mt-1 text-3xl sm:text-4xl font-semibold text-ink-800 tracking-tight">{money(totalEur)}</div>
+              <div className="mt-0.5 text-sm text-ink-500">≈ {twdMoney(totalTwd)}</div>
+            </div>
+            <div className="text-right shrink-0">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-sand-100 border border-sand-200 px-3 py-1.5 text-[12px] text-ink-600">
+                <Icon name="ReceiptText" size={13} className="text-sage-600" /> {expenses.length} 筆消費
+              </div>
+              <div className="mt-1.5 text-[11px] text-ink-500/70">匯率 1€ = {EXCHANGE_RATE} NT$</div>
+            </div>
+          </div>
+
+          <div className="mt-6 pt-5 border-t border-sand-200">
+            <SplitBar expenses={expenses} />
+          </div>
+        </div>
+      );
+    }
+
+    /* ---------- AA 結算卡片 ---------- */
+    function SettlementCard({ expenses }) {
+      const s = useMemo(() => computeSettlement(expenses), [expenses]);
+      const lineText = (res, fmt) => res.settle
+        ? `${res.settle.debtor} 應給 ${res.settle.creditor} ${fmt(res.settle.amt)}`
+        : '已結清，互不相欠';
+
+      return (
+        <div className="rounded-3xl border border-sand-200 bg-white shadow-soft p-6 sm:p-7">
+          <div className="flex items-center gap-2 text-ink-800 font-medium">
+            <Icon name="ArrowLeftRight" size={18} className="text-sage-600" /> AA 拆帳結算
+          </div>
+
+          <div className="mt-4 grid sm:grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-sand-200 bg-sand-50/50 p-4">
+              <div className="text-[12px] text-ink-500 mb-1">歐元結算</div>
+              <div className={"text-base font-semibold " + (s.eur.settle ? "text-ink-800" : "text-sage-700")}>
+                {lineText(s.eur, money)}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-sand-200 bg-sand-50/50 p-4">
+              <div className="text-[12px] text-ink-500 mb-1">台幣結算</div>
+              <div className={"text-base font-semibold " + (s.twd.settle ? "text-ink-800" : "text-sage-700")}>
+                {lineText(s.twd, twdMoney)}
+              </div>
+            </div>
+          </div>
+
+          {/* 收支明細對帳表（以歐元為準） */}
+          <div className="mt-4 overflow-hidden rounded-2xl border border-sand-200">
+            <table className="w-full text-[12.5px]">
+              <thead>
+                <tr className="bg-sand-50/70 text-ink-500">
+                  <th className="text-left font-medium px-4 py-2">對帳（€）</th>
+                  <th className="text-right font-medium px-4 py-2">實付</th>
+                  <th className="text-right font-medium px-4 py-2">應分攤</th>
+                  <th className="text-right font-medium px-4 py-2">淨額</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-sand-100">
+                {['Sandy', 'Jason'].map(p => {
+                  const r = s.eur[p];
+                  return (
+                    <tr key={p} className="text-ink-700">
+                      <td className="px-4 py-2">
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="h-2 w-2 rounded-full" style={{ background: SPLIT_META[p].color }} />{p}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums">{money(r.paid)}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{money(r.share)}</td>
+                      <td className={"px-4 py-2 text-right tabular-nums font-medium " + (r.net >= 0 ? "text-sage-700" : "text-clay-500")}>
+                        {r.net >= 0 ? '+' : '−'}{money(Math.abs(r.net))}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-[11px] text-ink-500/70">共同消費由兩人各分攤 50%；指定對象由該對象全額負擔。淨額為正代表對方應償還。</p>
+        </div>
+      );
+    }
+
+    /* ---------- 新增消費表單 ---------- */
+    function AddExpenseForm({ onAdd, dates }) {
+      const [form, setForm] = useState(() => ({
+        date: defaultExpenseDate(dates), category: '餐飲', note: '',
+        eur: '', twd: '', payment: '信用卡', payer: 'Sandy', forWhom: '共同',
+      }));
+      const [error, setError] = useState('');
+      const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+      const submit = (e) => {
+        e.preventDefault();
+        const eurV = form.eur.trim() === '' ? null : Number(form.eur);
+        const twdV = form.twd.trim() === '' ? null : Number(form.twd);
+        const eurOk = eurV != null && eurV > 0;
+        const twdOk = twdV != null && twdV > 0;
+        if (!eurOk && !twdOk) { setError('請至少填寫「歐元」或「台幣」其中一項金額'); return; }
+        setError('');
+        onAdd({
+          id: Date.now(), date: form.date, category: form.category,
+          note: form.note.trim() || '（無備註）',
+          eur: eurOk ? eurV : null, twd: twdOk ? twdV : null,
+          payment: form.payment, payer: form.payer, forWhom: form.forWhom,
+        });
+        setForm(f => ({ ...f, note: '', eur: '', twd: '' }));
+      };
+
+      const inputCls = "w-full rounded-xl border border-sand-200 bg-sand-50/50 px-3.5 py-2.5 text-sm text-ink-800 placeholder:text-ink-500/50 focus:outline-none focus:ring-2 focus:ring-sage-400/40 focus:border-sage-400 transition";
+
+      return (
+        <form onSubmit={submit} className="rounded-3xl border border-sand-200 bg-white shadow-soft p-6">
+          <div className="flex items-center gap-2 text-ink-800 font-medium mb-4">
+            <Icon name="PlusCircle" size={18} className="text-sage-600" /> 新增消費
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[12px] text-ink-500 mb-1.5">日期</label>
+              <select className={inputCls} value={form.date} onChange={e=>set('date', e.target.value)}>
+                {dates.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[12px] text-ink-500 mb-1.5">類別</label>
+              <select className={inputCls} value={form.category} onChange={e=>set('category', e.target.value)}>
+                {Object.keys(CATEGORIES).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <div>
+              <label className="block text-[12px] text-ink-500 mb-1.5">歐元 (€)</label>
+              <input className={inputCls} type="number" step="0.01" min="0" value={form.eur}
+                onChange={e=>set('eur', e.target.value)} placeholder="0.00" />
+            </div>
+            <div>
+              <label className="block text-[12px] text-ink-500 mb-1.5">台幣 (NT$)</label>
+              <input className={inputCls} type="number" step="1" min="0" value={form.twd}
+                onChange={e=>set('twd', e.target.value)} placeholder="0" />
+            </div>
+          </div>
+          <p className="mt-1.5 text-[11px] text-ink-500/70">歐元、台幣二擇一必填；皆填則各自採用輸入值。</p>
+
+          <div className="mt-4">
+            <label className="block text-[12px] text-ink-500 mb-1.5">付款方式</label>
+            <Segmented options={PAYMENTS} value={form.payment} onChange={v=>set('payment', v)} full />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <div>
+              <label className="block text-[12px] text-ink-500 mb-1.5">付款人</label>
+              <Segmented options={PAYERS} value={form.payer} onChange={v=>set('payer', v)} full />
+            </div>
+            <div>
+              <label className="block text-[12px] text-ink-500 mb-1.5">消費對象</label>
+              <Segmented options={FOR_WHOM} value={form.forWhom} onChange={v=>set('forWhom', v)} full />
+            </div>
+          </div>
+
+          <div className="mt-3">
+            <label className="block text-[12px] text-ink-500 mb-1.5">備註</label>
+            <input className={inputCls} value={form.note} onChange={e=>set('note', e.target.value)} placeholder="消費說明…" />
+          </div>
+
+          {error && (
+            <div className="mt-3 flex items-center gap-1.5 rounded-xl bg-clay-400/10 border border-clay-400/30 px-3 py-2 text-[12.5px] text-clay-500">
+              <Icon name="TriangleAlert" size={14} className="shrink-0" /> {error}
+            </div>
+          )}
+
+          <button type="submit"
+            className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-sage-600 hover:bg-sage-700 active:scale-[0.99] text-white text-sm font-medium py-3 transition">
+            <Icon name="Plus" size={17} strokeWidth={2.2} /> 加入明細
+          </button>
+        </form>
+      );
+    }
+
+    /* ---------- 篩選工具列 ---------- */
+    function FilterBar({ filters, setFilters, dates }) {
+      const set = (k, v) => setFilters(f => ({ ...f, [k]: v }));
+      const selCls = "rounded-xl border border-sand-200 bg-white px-3 py-2 text-[12.5px] text-ink-700 focus:outline-none focus:ring-2 focus:ring-sage-400/40 focus:border-sage-400 transition";
+      return (
+        <div className="rounded-2xl border border-sand-200 bg-white shadow-soft p-3">
+          <div className="flex items-center gap-1.5 text-[12px] text-ink-500 mb-2 px-1">
+            <Icon name="ListFilter" size={14} className="text-sage-600" /> 篩選
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <select className={selCls} value={filters.date} onChange={e=>set('date', e.target.value)}>
+              <option value="全部">全部日期</option>
+              {dates.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+            </select>
+            <select className={selCls} value={filters.forWhom} onChange={e=>set('forWhom', e.target.value)}>
+              <option value="全部">全部消費對象</option>
+              {FOR_WHOM.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
+            <select className={selCls} value={filters.category} onChange={e=>set('category', e.target.value)}>
+              <option value="全部">全部類別</option>
+              {Object.keys(CATEGORIES).map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        </div>
+      );
+    }
+
+    /* ---------- 編輯消費 彈窗 ---------- */
+    function ExpenseModal({ initial, dates, onClose, onSave }) {
+      const [form, setForm] = useState(() => ({
+        date: initial.date,
+        category: initial.category,
+        note: initial.note === '（無備註）' ? '' : initial.note,
+        eur: initial.eur != null ? String(initial.eur) : '',
+        twd: initial.twd != null ? String(initial.twd) : '',
+        payment: initial.payment, payer: initial.payer, forWhom: initial.forWhom,
+      }));
+      const [error, setError] = useState('');
+      const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+      const submit = (e) => {
+        e.preventDefault();
+        const eurV = form.eur.trim() === '' ? null : Number(form.eur);
+        const twdV = form.twd.trim() === '' ? null : Number(form.twd);
+        const eurOk = eurV != null && eurV > 0;
+        const twdOk = twdV != null && twdV > 0;
+        if (!eurOk && !twdOk) { setError('請至少填寫「歐元」或「台幣」其中一項金額'); return; }
+        onSave({
+          date: form.date, category: form.category, note: form.note.trim() || '（無備註）',
+          eur: eurOk ? eurV : null, twd: twdOk ? twdV : null,
+          payment: form.payment, payer: form.payer, forWhom: form.forWhom,
+        });
+      };
+
+      const inputCls = "w-full rounded-xl border border-sand-200 bg-sand-50/50 px-3.5 py-2.5 text-sm text-ink-800 placeholder:text-ink-500/50 focus:outline-none focus:ring-2 focus:ring-sage-400/40 focus:border-sage-400 transition";
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+          <div className="absolute inset-0 bg-ink-800/25 backdrop-blur-[2px]" />
+          <form onClick={e=>e.stopPropagation()} onSubmit={submit}
+            className="relative w-full max-w-md rounded-3xl border border-sand-200 bg-white shadow-soft p-6 pop-in max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-2 text-ink-800 font-medium">
+                <Icon name="Pencil" size={18} className="text-sage-600" /> 編輯消費
+              </div>
+              <button type="button" onClick={onClose} className="text-ink-500 hover:text-ink-700 p-1 -mr-1">
+                <Icon name="X" size={18} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[12px] text-ink-500 mb-1.5">日期</label>
+                <select className={inputCls} value={form.date} onChange={e=>set('date', e.target.value)}>
+                  {dates.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[12px] text-ink-500 mb-1.5">類別</label>
+                <select className={inputCls} value={form.category} onChange={e=>set('category', e.target.value)}>
+                  {Object.keys(CATEGORIES).map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div>
+                <label className="block text-[12px] text-ink-500 mb-1.5">歐元 (€)</label>
+                <input className={inputCls} type="number" step="0.01" min="0" value={form.eur}
+                  onChange={e=>set('eur', e.target.value)} placeholder="0.00" />
+              </div>
+              <div>
+                <label className="block text-[12px] text-ink-500 mb-1.5">台幣 (NT$)</label>
+                <input className={inputCls} type="number" step="1" min="0" value={form.twd}
+                  onChange={e=>set('twd', e.target.value)} placeholder="0" />
+              </div>
+            </div>
+            <p className="mt-1.5 text-[11px] text-ink-500/70">歐元、台幣二擇一必填；皆填則各自採用輸入值。</p>
+
+            <div className="mt-4">
+              <label className="block text-[12px] text-ink-500 mb-1.5">付款方式</label>
+              <Segmented options={PAYMENTS} value={form.payment} onChange={v=>set('payment', v)} full />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div>
+                <label className="block text-[12px] text-ink-500 mb-1.5">付款人</label>
+                <Segmented options={PAYERS} value={form.payer} onChange={v=>set('payer', v)} full />
+              </div>
+              <div>
+                <label className="block text-[12px] text-ink-500 mb-1.5">消費對象</label>
+                <Segmented options={FOR_WHOM} value={form.forWhom} onChange={v=>set('forWhom', v)} full />
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <label className="block text-[12px] text-ink-500 mb-1.5">項目名稱 / 備註</label>
+              <input className={inputCls} value={form.note} onChange={e=>set('note', e.target.value)} placeholder="消費說明…" />
+            </div>
+
+            {error && (
+              <div className="mt-3 flex items-center gap-1.5 rounded-xl bg-clay-400/10 border border-clay-400/30 px-3 py-2 text-[12.5px] text-clay-500">
+                <Icon name="TriangleAlert" size={14} className="shrink-0" /> {error}
+              </div>
+            )}
+
+            <div className="mt-6 flex gap-2">
+              <button type="button" onClick={onClose}
+                className="flex-1 rounded-xl border border-sand-300 bg-white text-ink-600 text-sm font-medium py-2.5 hover:bg-sand-100 transition">
+                取消
+              </button>
+              <button type="submit"
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-sage-600 hover:bg-sage-700 active:scale-[0.99] text-white text-sm font-medium py-2.5 transition">
+                <Icon name="Check" size={16} strokeWidth={2.2} /> 儲存變更
+              </button>
+            </div>
+          </form>
+        </div>
+      );
+    }
+
+    /* ---------- 消費明細列表 ---------- */
+    function Ledger({ expenses, onRemove, onEdit, onExport }) {
+      const sub = expenses.reduce((s, e) => {
+        const a = effAmounts(e); s.eur += a.eur; s.twd += a.twd; return s;
+      }, { eur: 0, twd: 0 });
+
+      return (
+        <div className="rounded-3xl border border-sand-200 bg-white shadow-soft overflow-hidden">
+          <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-sand-200">
+            <div className="flex items-center gap-2 text-ink-800 font-medium">
+              <Icon name="ReceiptText" size={18} className="text-sage-600" /> 消費明細
+            </div>
+            <div className="flex items-center gap-2.5">
+              <button type="button" onClick={onExport}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-sand-300 bg-white px-3 py-1.5 text-[12px] text-ink-600 hover:text-sage-700 hover:border-sage-400 transition"
+                title="匯出所有記帳資料為 CSV">
+                <Icon name="Download" size={14} /> 匯出 CSV
+              </button>
+              <span className="text-[13px] text-ink-500">{expenses.length} 筆</span>
+            </div>
+          </div>
+
+          <div className="divide-y divide-sand-100">
+            {expenses.length === 0 && (
+              <div className="px-6 py-10 text-center text-ink-500 text-sm">沒有符合篩選條件的消費紀錄。</div>
+            )}
+            {expenses.map(e => {
+              const c = CATEGORIES[e.category] || CATEGORIES['其他'];
+              const a = effAmounts(e);
+              return (
+                <div key={e.id} className="group flex items-center gap-3 px-5 sm:px-6 py-3.5 hover:bg-sand-50/60 transition">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                    style={{ background:c.bg, color:c.color }}>
+                    <Icon name={c.icon} size={18} strokeWidth={2} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-ink-800 truncate">{e.note}</div>
+                    <div className="text-[12px] text-ink-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                      <span className="inline-flex items-center gap-1"><Icon name="Calendar" size={12} />{e.date}</span>
+                      <span className="text-sand-300">·</span>
+                      <span>{e.category}</span>
+                      <span className="text-sand-300">·</span>
+                      <span className="inline-flex items-center gap-1">
+                        <Icon name="User" size={12} className="text-sage-600" />{e.payer} → {e.forWhom}
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-sand-100 border border-sand-200 px-2 py-0.5 text-[11px]">
+                        <Icon name={e.payment === '現金' ? 'Banknote' : 'CreditCard'} size={11} />{e.payment}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-medium text-ink-800 tabular-nums">{a.eurEntered ? '' : '≈'}{money(a.eur)}</div>
+                    <div className="text-[12px] text-ink-500 tabular-nums">{a.twdEntered ? '' : '≈'}{twdMoney(a.twd)}</div>
+                  </div>
+                  <div className="ml-1 flex items-center gap-0.5 shrink-0">
+                    <button onClick={()=>onEdit(e)}
+                      className="text-ink-500/50 hover:text-sage-700 hover:bg-sand-100 rounded-lg p-1.5 transition"
+                      title="編輯">
+                      <Icon name="Pencil" size={15} />
+                    </button>
+                    <button onClick={()=>onRemove(e.id)}
+                      className="text-ink-500/50 hover:text-clay-500 hover:bg-sand-100 rounded-lg p-1.5 transition"
+                      title="刪除">
+                      <Icon name="Trash2" size={15} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {expenses.length > 0 && (
+            <div className="flex items-center justify-between px-6 py-4 bg-sand-50/60 border-t border-sand-200">
+              <span className="text-sm text-ink-600">小計</span>
+              <div className="text-right">
+                <div className="text-base font-semibold text-ink-800 tabular-nums">{money(sub.eur)}</div>
+                <div className="text-[12px] text-ink-500 tabular-nums">≈ {twdMoney(sub.twd)}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function ExpensesView() {
+      const [expenses, setExpenses] = usePersistentState(LS_KEYS.expenses, INIT_EXPENSES);
+      const [filters, setFilters] = useState({ date: '全部', forWhom: '全部', category: '全部' });
+      const [editing, setEditing] = useState(null); // 正在編輯的消費（null 為關閉）
+      const dates = useMemo(() => getTripDates(), []);
+
+      const add = (e) => setExpenses(list => [e, ...list]);
+      const remove = (id) => setExpenses(list => list.filter(x => x.id !== id));
+      const update = (id, patch) => setExpenses(list => list.map(x => x.id === id ? { ...x, ...patch } : x));
+
+      const filtered = useMemo(() => {
+        return expenses
+          .filter(e =>
+            (filters.date === '全部' || e.date === filters.date) &&
+            (filters.forWhom === '全部' || e.forWhom === filters.forWhom) &&
+            (filters.category === '全部' || e.category === filters.category))
+          .slice()
+          .sort((a, b) => a.date.localeCompare(b.date) || (a.id - b.id));
+      }, [expenses, filters]);
+
+      return (
+        <div className="space-y-4">
+          {/* 總花費（雙幣別 + 分攤進度條） */}
+          <SummaryCard expenses={expenses} />
+          {/* AA 拆帳結算 */}
+          <SettlementCard expenses={expenses} />
+          {/* 新增消費（置於上方，方便快速輸入） */}
+          <AddExpenseForm onAdd={add} dates={dates} />
+          {/* 篩選 + 明細列表（置於下方） */}
+          <FilterBar filters={filters} setFilters={setFilters} dates={dates} />
+          <Ledger expenses={filtered} onRemove={remove} onEdit={setEditing} onExport={()=>exportExpensesCSV(expenses)} />
+
+          {editing && (
+            <ExpenseModal
+              initial={editing}
+              dates={dates}
+              onClose={()=>setEditing(null)}
+              onSave={(patch)=>{ update(editing.id, patch); setEditing(null); }}
+            />
+          )}
+        </div>
+      );
+    }
+
+    /* ---------- 主框架 ---------- */
+    function App() {
+      const [tab, setTab] = useState('itinerary');
+      const tabs = [
+        { key:'itinerary', label:'行程總覽', icon:'CalendarDays' },
+        { key:'expenses',  label:'旅遊記帳', icon:'Wallet' },
+      ];
+      return (
+        <div className="min-h-full">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 sm:py-10">
+            <header className="mb-7">
+              <div className="flex items-center gap-2 text-sage-600 text-[13px] font-medium">
+                <Icon name="Plane" size={15} /> TRAVEL PLANNER
+              </div>
+              <h1 className="mt-2 text-2xl sm:text-3xl font-semibold text-ink-800 tracking-tight">{TRIP.title}</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px] text-ink-500">
+                <span className="inline-flex items-center gap-1.5"><Icon name="MapPin" size={14} className="text-oat-500"/>{TRIP.subtitle}</span>
+                <span className="inline-flex items-center gap-1.5"><Icon name="Calendar" size={14} className="text-oat-500"/>{TRIP.dateRange}</span>
+              </div>
+            </header>
+
+            <div className="inline-flex items-center gap-1 rounded-2xl border border-sand-200 bg-white p-1 shadow-soft mb-6">
+              {tabs.map(t => {
+                const active = tab === t.key;
+                return (
+                  <button key={t.key} onClick={()=>setTab(t.key)}
+                    className={"inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition " +
+                      (active ? "bg-sage-600 text-white shadow-sm" : "text-ink-600 hover:bg-sand-100")}>
+                    <Icon name={t.icon} size={16} /> {t.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <main key={tab} className="fade-in">
+              {tab === 'itinerary' ? <ItineraryView /> : <ExpensesView />}
+            </main>
+
+            <footer className="mt-10 flex flex-col items-center gap-3">
+              <button onClick={resetAllData}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-sand-300 bg-white px-3.5 py-2 text-[12.5px] text-ink-500 hover:text-clay-500 hover:border-clay-400 transition">
+                <Icon name="RotateCcw" size={14} /> 重設示範資料
+              </button>
+              <div className="text-center text-[12px] text-ink-500/70">
+                <span className="inline-flex items-center gap-1"><Icon name="Save" size={12} /> 資料自動儲存於本機瀏覽器</span>
+                <span className="mx-1.5 text-sand-300">·</span>
+                <span className="inline-flex items-center gap-1"><Icon name="CloudSun" size={12} /> 天氣由 Open-Meteo 提供</span>
+              </div>
+            </footer>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+
+  <!-- 以 classic runtime 手動轉譯並執行（避免 automatic runtime 產生 import 導致失敗） -->
+  <script>
+    (function () {
+      var src = document.getElementById('app-src').textContent;
+      var out = Babel.transform(src, {
+        presets: [['react', { runtime: 'classic' }]],
+      }).code;
+      (0, eval)(out);
+    })();
+  </script>
+
+  <!-- ===== PWA：註冊 Service Worker（離線快取；需以 http(s) 或 localhost 開啟） ===== -->
+  <script>
+    (function () {
+      // Service Worker 僅在安全來源（https / localhost）與 http(s) 下可用；file:// 會自動略過
+      if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('./sw.js').catch(function () {/* 略過失敗，不影響使用 */});
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
