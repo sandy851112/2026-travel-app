@@ -3,30 +3,41 @@
  *       之後即使「完全離線」也能開啟網頁查看行程與記帳。
  * 注意：Service Worker 僅能在 https 或 http://localhost 下運作（file:// 不支援）。
  */
-const CACHE = 'travel-planner-v2';
+const CACHE = 'travel-planner-v3';
 
 // 首次安裝時預先快取的核心資源（含所有 CDN 函式庫）
 const PRECACHE = [
   './',
   './index.html',
   'https://cdn.tailwindcss.com',
-  'https://unpkg.com/react@18/umd/react.production.min.js',
-  'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
-  'https://unpkg.com/@babel/standalone/babel.min.js',
-  'https://unpkg.com/lucide@latest/dist/umd/lucide.js',
+  'https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js',
+  'https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js',
+  'https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js',
+  'https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js',
   'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap',
 ];
 
-// 安裝：逐一預快取（跨網域資源以 no-cors 取得 opaque 回應，個別失敗不影響整體）
+// 安裝：逐一預快取。
+// 重要：先以 'cors' 模式抓取——像 jsdelivr／unpkg／googleapis 這類支援 CORS 的 CDN，
+// 會回傳可驗證的正常回應；若快取成 'no-cors' 的 opaque 回應，之後遇到帶
+// crossorigin 屬性的 <script> 標籤（例如 React／ReactDOM）會被瀏覽器判定為
+// net::ERR_FAILED（opaque 回應無法滿足需要 CORS 驗證的請求），導致「React is not defined」。
+// 只有在 CORS 抓取失敗時才退回 no-cors，個別資源失敗也不影響整體安裝。
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     await Promise.allSettled(PRECACHE.map(async (url) => {
+      const isCrossOrigin = url.startsWith('http') && !url.startsWith(self.location.origin);
       try {
-        const req = new Request(url, { mode: url.startsWith('http') && !url.startsWith(self.location.origin) ? 'no-cors' : 'same-origin' });
-        const res = await fetch(req);
-        if (res && (res.ok || res.type === 'opaque')) await cache.put(req, res.clone());
-      } catch (e) { /* 忽略個別資源失敗 */ }
+        const res = await fetch(url, { mode: isCrossOrigin ? 'cors' : 'same-origin' });
+        if (res && res.ok) { await cache.put(url, res.clone()); return; }
+      } catch (e) { /* 該資源不支援 CORS，往下退回 no-cors */ }
+      if (isCrossOrigin) {
+        try {
+          const res2 = await fetch(url, { mode: 'no-cors' });
+          if (res2) await cache.put(url, res2.clone());
+        } catch (e2) { /* 忽略個別資源失敗 */ }
+      }
     }));
     self.skipWaiting();
   })());
