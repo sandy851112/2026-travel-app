@@ -58,18 +58,17 @@
   </script>
 
   <!-- ===== Firebase Realtime Database（兩支手機跨裝置即時同步） ===== -->
+  <!-- 先以 classic script 建立「就緒 Promise」，確保 App 無論載入順序都能等到 Firebase 結果，
+       不會因為 module（延後執行）比 App 晚跑而誤判成「本機模式」。 -->
+  <script>
+    window.__firebase = null;
+    window.__firebaseReady = new Promise(function (resolve) { window.__fbResolve = resolve; });
+  </script>
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-
+    // 你在 Firebase Console 確認的真實資料庫網址（美國區）
     const firebaseConfig = {
       apiKey: "AIzaSyDBaxXOp9hWZR47XC6teQJwGpPtG_a_GXc",
       authDomain: "travel-app-db-fa084.firebaseapp.com",
-      // ⚠️【重要】若下方「雲端同步狀態」一直無法變成「雲端已同步」，多半是這行網址的「區域」不對。
-      //   請到 Firebase Console → Realtime Database，複製最上方顯示的網址整段貼到這裡：
-      //   • 美國區： https://travel-app-db-fa084-default-rtdb.firebaseio.com
-      //   • 亞洲/歐洲區： https://travel-app-db-fa084-default-rtdb.<區域>.firebasedatabase.app
-      //     （台灣建立時常選 asia-southeast1，例如 https://travel-app-db-fa084-default-rtdb.asia-southeast1.firebasedatabase.app）
       databaseURL: "https://travel-app-db-fa084-default-rtdb.firebaseio.com",
       projectId: "travel-app-db-fa084",
       storageBucket: "travel-app-db-fa084.firebasestorage.app",
@@ -77,16 +76,20 @@
       appId: "1:583522598971:web:6102201bdbedcdd2fc9c1e"
     };
 
-    // 以 Promise 對外暴露，App（另一個 classic script）會等待其就緒後再讀寫
-    window.__firebaseReady = (async () => {
+    // 動態 import + try/catch：把「SDK 載入失敗」與「初始化失敗」全部攔下。
+    // 成功 → resolve(firebase API)；失敗 → resolve(null)，App 自動改用本機模式，絕不白屏。
+    (async () => {
       try {
+        const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+        const { getDatabase, ref, onValue, set } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         window.__firebase = { db, ref, onValue, set };
-        return window.__firebase;
+        window.__fbResolve(window.__firebase);
       } catch (e) {
-        console.warn('[Firebase] 初始化失敗，改用本機模式：', e);
-        return null;
+        console.warn('[Firebase] 載入或初始化失敗，已改用本機模式（不影響操作）：', e);
+        window.__firebase = null;
+        window.__fbResolve(null);
       }
     })();
   </script>
