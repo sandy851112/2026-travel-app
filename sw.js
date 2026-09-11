@@ -3,7 +3,7 @@
  *       之後即使「完全離線」也能開啟網頁查看行程與記帳。
  * 注意：Service Worker 僅能在 https 或 http://localhost 下運作（file:// 不支援）。
  */
-const CACHE = 'travel-planner-v1';
+const CACHE = 'travel-planner-v2';
 
 // 首次安裝時預先快取的核心資源（含所有 CDN 函式庫）
 const PRECACHE = [
@@ -45,6 +45,14 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
+
+  // Firebase 即時資料庫／驗證等連線一律走網路，不快取（避免即時同步被舊快取干擾）
+  let host = '';
+  try { host = new URL(req.url).hostname; } catch (e) {}
+  if (/firebaseio\.com$/.test(host) || /firebasedatabase\.app$/.test(host) ||
+      /(^|\.)googleapis\.com$/.test(host) || /firebaseinstallations/.test(host)) {
+    return; // 交給瀏覽器預設網路行為
+  }
 
   event.respondWith((async () => {
     const cached = await caches.match(req, { ignoreSearch: false });

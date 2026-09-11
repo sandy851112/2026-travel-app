@@ -57,6 +57,40 @@
     })();
   </script>
 
+  <!-- ===== Firebase Realtime Database（兩支手機跨裝置即時同步） ===== -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDBaxXOp9hWZR47XC6teQJwGpPtG_a_GXc",
+      authDomain: "travel-app-db-fa084.firebaseapp.com",
+      // ⚠️【重要】若下方「雲端同步狀態」一直無法變成「雲端已同步」，多半是這行網址的「區域」不對。
+      //   請到 Firebase Console → Realtime Database，複製最上方顯示的網址整段貼到這裡：
+      //   • 美國區： https://travel-app-db-fa084-default-rtdb.firebaseio.com
+      //   • 亞洲/歐洲區： https://travel-app-db-fa084-default-rtdb.<區域>.firebasedatabase.app
+      //     （台灣建立時常選 asia-southeast1，例如 https://travel-app-db-fa084-default-rtdb.asia-southeast1.firebasedatabase.app）
+      databaseURL: "https://travel-app-db-fa084-default-rtdb.firebaseio.com",
+      projectId: "travel-app-db-fa084",
+      storageBucket: "travel-app-db-fa084.firebasestorage.app",
+      messagingSenderId: "583522598971",
+      appId: "1:583522598971:web:6102201bdbedcdd2fc9c1e"
+    };
+
+    // 以 Promise 對外暴露，App（另一個 classic script）會等待其就緒後再讀寫
+    window.__firebaseReady = (async () => {
+      try {
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        window.__firebase = { db, ref, onValue, set };
+        return window.__firebase;
+      } catch (e) {
+        console.warn('[Firebase] 初始化失敗，改用本機模式：', e);
+        return null;
+      }
+    })();
+  </script>
+
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- React 18 -->
@@ -108,9 +142,9 @@
   <div id="root"></div>
 
   <script type="text/babel-src" id="app-src">
-    const { useState, useMemo, useEffect } = React;
+    const { useState, useMemo, useEffect, useRef } = React;
 
-    /* ---------- localStorage 持久化 ---------- */
+    /* ---------- localStorage 持久化（離線快取） ---------- */
     const LS_KEYS = { days: 'travel.days.v3', expenses: 'travel.expenses.v3' };
 
     function loadLS(key) {
@@ -131,12 +165,90 @@
       useEffect(() => { saveLS(key, state); }, [key, state]);
       return [state, setState];
     }
+
+    /* ---------- Firebase 即時同步狀態（與 useState 相同用法） ----------
+       讀：onValue 監聽雲端 path，任一裝置變更 → 另一裝置自動更新。
+       寫：set 整包寫回雲端（last-write-wins）＋ 同步寫入 localStorage 作離線快取。
+       離線 / 未設定 Firebase 時，自動退回本機快取，功能不受影響。 */
+    function useCloudState(path, initializer) {
+      const cacheKey = 'cache:' + path;
+      const [state, setState] = useState(() => {
+        const cached = loadLS(cacheKey);
+        if (cached !== undefined) return cached;
+        return typeof initializer === 'function' ? initializer() : initializer;
+      });
+      const stateRef = useRef(state);
+      stateRef.current = state;
+      const seeded = useRef(false);
+
+      useEffect(() => {
+        let unsub = null, cancelled = false;
+        Promise.resolve(window.__firebaseReady).then((fb) => {
+          if (cancelled || !fb) return;
+          const r = fb.ref(fb.db, path);
+          unsub = fb.onValue(r, (snap) => {
+            const val = snap.val();
+            if (val == null) {
+              // 雲端尚無資料 → 由第一個開啟的裝置寫入示範資料（每個裝置最多種一次）
+              if (!seeded.current) {
+                seeded.current = true;
+                const seed = typeof initializer === 'function' ? initializer() : initializer;
+                fb.set(r, seed).catch(() => {});
+              }
+            } else {
+              seeded.current = true;
+              setState(val);
+              saveLS(cacheKey, val);
+            }
+          }, () => { /* 讀取失敗（權限/網路）→ 維持本機資料 */ });
+        });
+        return () => { cancelled = true; if (unsub) unsub(); };
+      }, [path]);
+
+      // 與 setState 相容（可傳值或 updater function）
+      const update = (next) => {
+        const value = typeof next === 'function' ? next(stateRef.current) : next;
+        setState(value);
+        saveLS(cacheKey, value);
+        Promise.resolve(window.__firebaseReady).then((fb) => {
+          if (fb) fb.set(fb.ref(fb.db, path), value).catch(() => {});
+        });
+      };
+      return [state, update];
+    }
+
+    // 雲端連線狀態（供畫面顯示徽章）
+    function useCloudStatus() {
+      const [status, setStatus] = useState('connecting'); // connecting | online | offline | local
+      useEffect(() => {
+        let unsub = null, cancelled = false;
+        Promise.resolve(window.__firebaseReady).then((fb) => {
+          if (cancelled) return;
+          if (!fb) { setStatus('local'); return; }
+          const r = fb.ref(fb.db, '.info/connected');
+          unsub = fb.onValue(r, (snap) => setStatus(snap.val() ? 'online' : 'offline'));
+        });
+        return () => { cancelled = true; if (unsub) unsub(); };
+      }, []);
+      return status;
+    }
+
     function resetAllData() {
       try {
+        window.localStorage.removeItem('cache:days');
+        window.localStorage.removeItem('cache:expenses');
         window.localStorage.removeItem(LS_KEYS.days);
         window.localStorage.removeItem(LS_KEYS.expenses);
       } catch (e) {}
-      window.location.reload();
+      // 一併把雲端重設為全新示範資料（兩支手機都會同步回到預設）
+      Promise.resolve(window.__firebaseReady).then((fb) => {
+        if (fb) {
+          try {
+            fb.set(fb.ref(fb.db, 'days'), seedDays());
+            fb.set(fb.ref(fb.db, 'expenses'), INIT_EXPENSES);
+          } catch (e) {}
+        }
+      }).finally(() => setTimeout(() => window.location.reload(), 250));
     }
 
     /* ---------- lucide 圖示 React 包裝 ---------- */
@@ -153,9 +265,9 @@
       );
     }
 
-    /* ---------- 唯一 id 產生器 ---------- */
-    let _uid = 1000;
-    const uid = () => (++_uid);
+    /* ---------- 唯一 id 產生器（時間戳＋計數，跨裝置不易撞號） ---------- */
+    let _uid = 0;
+    const uid = () => (Date.now() * 1000 + (++_uid % 1000));
 
     /* ---------- 交通方式 ---------- */
     // 可選項（依需求：移除「纜車」「電車」；新增「計程車」「自行車」；「巴士」改名「公車」）
@@ -919,7 +1031,7 @@
     }
 
     function ItineraryView() {
-      const [days, setDays] = usePersistentState(LS_KEYS.days, seedDays);
+      const [days, setDays] = useCloudState('days', seedDays);
       // 由 localStorage 載入後，將 uid 計數器推進到大於所有既有 id，避免新資料 id 撞號
       useMemo(() => {
         let max = _uid;
@@ -934,8 +1046,15 @@
       const [modal, setModal] = useState(null);
       const [transportModal, setTransportModal] = useState(null);
 
-      const active = days.find(d => d.id === activeId) || days[0] || null;
+      const active = days.find(d => d.id === activeId) || days[1] || days[0] || null;
       const activeIndex = active ? days.findIndex(d => d.id === active.id) : -1;
+
+      // 雲端同步後 days 會換成新 id；若目前選取的日期已不存在，改指向第一個實際行程日
+      useEffect(() => {
+        if (days.length && !days.find(d => d.id === activeId)) {
+          setActiveId((days[1] || days[0]).id);
+        }
+      }, [days]);
 
       const addItem = (dayId, item) => {
         setDays(ds => ds.map(d => d.id === dayId
@@ -1090,7 +1209,8 @@
     }
     // 由行程資料（localStorage 或 seed）取出所有有效日期，供下拉選單使用
     function getTripDates() {
-      const stored = loadLS(LS_KEYS.days);
+      // 優先讀雲端同步後的快取（cache:days），否則退回預設行程
+      const stored = loadLS('cache:days');
       const src = Array.isArray(stored) && stored.length ? stored : ITINERARY;
       // 保留原始 Day 序號（0-based）作為標籤前綴，例如「DAY 0 · 12/07（一）」
       return src
@@ -1642,7 +1762,7 @@
     }
 
     function ExpensesView() {
-      const [expenses, setExpenses] = usePersistentState(LS_KEYS.expenses, INIT_EXPENSES);
+      const [expenses, setExpenses] = useCloudState('expenses', INIT_EXPENSES);
       const [filters, setFilters] = useState({ date: '全部', forWhom: '全部', category: '全部' });
       const [editing, setEditing] = useState(null); // 正在編輯的消費（null 為關閉）
       const dates = useMemo(() => getTripDates(), []);
@@ -1685,6 +1805,23 @@
       );
     }
 
+    /* ---------- 雲端同步狀態徽章 ---------- */
+    function CloudBadge() {
+      const s = useCloudStatus();
+      const MAP = {
+        connecting: { t: '雲端連線中', cls: 'bg-sand-200 text-ink-500',        icon: 'Cloud' },
+        online:     { t: '雲端已同步', cls: 'bg-sage-500/15 text-sage-700',     icon: 'Wifi' },
+        offline:    { t: '離線（本機）', cls: 'bg-oat-400/20 text-oat-600',      icon: 'WifiOff' },
+        local:      { t: '本機模式',   cls: 'bg-sand-200 text-ink-500',         icon: 'HardDrive' },
+      };
+      const m = MAP[s] || MAP.connecting;
+      return (
+        <span className={"inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium " + m.cls}>
+          <Icon name={m.icon} size={12} /> {m.t}
+        </span>
+      );
+    }
+
     /* ---------- 主框架 ---------- */
     function App() {
       const [tab, setTab] = useState('itinerary');
@@ -1696,8 +1833,11 @@
         <div className="min-h-full">
           <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 sm:py-10">
             <header className="mb-7">
-              <div className="flex items-center gap-2 text-sage-600 text-[13px] font-medium">
-                <Icon name="Plane" size={15} /> TRAVEL PLANNER
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sage-600 text-[13px] font-medium">
+                  <Icon name="Plane" size={15} /> TRAVEL PLANNER
+                </div>
+                <CloudBadge />
               </div>
               <h1 className="mt-2 text-2xl sm:text-3xl font-semibold text-ink-800 tracking-tight">{TRIP.title}</h1>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px] text-ink-500">
